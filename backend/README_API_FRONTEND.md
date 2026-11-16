@@ -252,6 +252,32 @@ curl -b cookies.txt "http://localhost:8000/api/tasks/?project_id=3"
 
 ---
 
+# Модуль интеграции с API задач (для AI-агента)
+
+## 1. Согласованные параметры API
+- **Адрес для получения задач:** `GET /api/tasks/?project_id={id}`
+- **Базовый адрес (локально):** `http://localhost:8000`
+- **Формат данных:** JSON
+- **Авторизация:** сессия (cookie) после входа через `POST /api/auth/login/`
+
+### Поля задачи:
+- **Название:** `title`
+- **Срок:** `due_date` (строка `YYYY-MM-DD` или `null`)
+- **Статус:** `status` (`todo`, `in_progress`, `review`, `done`)
+
+---
+
+## 2. Использование Python-клиента
+Пример использования класса `TaskManagerClient` из файла `api_client.py`:
+
+```python
+from api_client import TaskManagerClient
+
+client = TaskManagerClient("http://localhost:8000")
+client.login("ivan", "password123")
+tasks = client.get_project_tasks(3)
+print(tasks)
+
 ## 9. Что пока не готово
 
 - Комментарии, файлы, отчёты и архивирование проекта.
