@@ -6,7 +6,7 @@ import type { Status, Task } from '../domain/model';
 import { Avatar, Empty, PriorityBadge, StatusBadge } from './ui';
 
 export function TaskTable({ tasks, compact = false }: { tasks: Task[]; compact?: boolean }) {
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   if (!user) return null;
   if (!tasks.length)
@@ -32,7 +32,7 @@ export function TaskTable({ tasks, compact = false }: { tasks: Task[]; compact?:
           {tasks.map((task) => {
             const project = data.projects.find((p) => p.id === task.projectId);
             const assignee = data.users.find((u) => u.id === task.assigneeId);
-            const allowed = project ? nextStatuses(user, task, project) : [];
+            const allowed = project ? nextStatuses(user, task, project, Boolean(server)) : [];
             return (
               <tr key={task.id}>
                 <td>
@@ -60,6 +60,7 @@ export function TaskTable({ tasks, compact = false }: { tasks: Task[]; compact?:
                         const status = e.target.value as Status;
                         if (task.status === 'in_review' && status === 'in_progress')
                           navigate(`/app/tasks/${task.id}?return=1`);
+                        else if (server) void server.changeStatus(task.id, status);
                         else
                           void transact(
                             (d, u) => transition(d, u, task.id, status),

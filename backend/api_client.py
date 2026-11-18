@@ -1,8 +1,25 @@
 import requests
 
+
+def format_project_tasks(tasks, frontend_url=""):
+    """Build the task context used by the Python client and the Django endpoint."""
+    return [
+        {
+            "id": task["id"],
+            "title": task["title"],
+            "assignee": task["assignee"],
+            "status": task["status"],
+            "due_date": task["due_date"],
+            "card_url": f"{frontend_url}/app/tasks/{task['id']}",
+        }
+        for task in tasks
+    ]
+
+
 class TaskManagerClient:
-    def __init__(self, base_url="http://localhost:8000"):
-        self.base_url = base_url
+    def __init__(self, base_url="http://localhost:8000", frontend_url="http://localhost:5173"):
+        self.base_url = base_url.rstrip("/")
+        self.frontend_url = frontend_url.rstrip("/")
         # Используем Session для автоматического сохранения и отправки cookie (sessionid)
         self.session = requests.Session()
 
@@ -14,7 +31,9 @@ class TaskManagerClient:
             "password": password
         }
         
-        response = self.session.post(url, json=payload)
+        token = self.session.get(f"{self.base_url}/api/auth/csrf/", timeout=10)
+        token.raise_for_status()
+        response = self.session.post(url, json=payload, headers={"X-CSRFToken": token.json()["csrf_token"]}, timeout=10)
         response.raise_for_status()
         return response.json()
 
@@ -26,20 +45,7 @@ class TaskManagerClient:
         url = f"{self.base_url}/api/tasks/"
         params = {"project_id": project_id}
         
-        response = self.session.get(url, params=params)
+        response = self.session.get(url, params=params, timeout=10)
         response.raise_for_status()
         
-        raw_tasks = response.json()
-        formatted_tasks = []
-        
-        for task in raw_tasks:
-            formatted_tasks.append({
-                "id": task.get("id"),
-                "title": task.get("title"),          # Название
-                "assignee": task.get("assignee"),    # Исполнитель (ID)
-                "status": task.get("status"),        # Статус (todo, in_progress, review, done)
-                "due_date": task.get("due_date"),    # Срок (YYYY-MM-DD или null)
-                "card_url": f"{self.base_url}/tasks/{task.get('id')}/"  # Ссылка на карточку задачи
-            })
-            
-        return formatted_tasks
+        return format_project_tasks(response.json(), self.frontend_url)

@@ -18,5 +18,5 @@ def tasks_for(user):
     if user.role == Role.MANAGER:
         return Task.objects.filter(project__manager=user)
     if user.role == Role.EMPLOYEE:
-        return Task.objects.filter(assignee=user)
+        return Task.objects.filter(assignee=user, project__members=user)
     return Task.objects.none()

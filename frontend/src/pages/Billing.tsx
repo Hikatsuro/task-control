@@ -14,7 +14,7 @@ import {
 } from '../components/ui';
 
 export function Billing() {
-  const { data, user } = useWorkspace();
+  const { data, user, server } = useWorkspace();
   if (user?.role !== 'manager') return <NotFound forbidden />;
   return (
     <Screen>
@@ -64,8 +64,10 @@ export function Billing() {
             <Notice tone="success">
               Демотариф активирован до {formatDate(data.subscription.expiresAt ?? '')}.
             </Notice>
-          ) : (
+          ) : !server ? (
             <ActionLink to="/app/billing/checkout">Посмотреть тестовую оплату</ActionLink>
+          ) : (
+            <span className="badge status-new">Подключение оплаты запланировано</span>
           )}
           <small>AI и ML сейчас доступны как явно обозначенные демонстрации.</small>
         </section>
@@ -74,9 +76,16 @@ export function Billing() {
   );
 }
 export function Checkout() {
-  const { user, transact, busy } = useWorkspace();
+  const { user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   if (user?.role !== 'manager') return <NotFound forbidden />;
+  if (server)
+    return (
+      <Screen>
+        <PageHeading title="Тестовая оплата" back="/app/billing" />
+        <Notice>Подключение PayPal Sandbox запланировано отдельно.</Notice>
+      </Screen>
+    );
   function result(status: string) {
     if (status === 'success')
       void transact((d, a) => {

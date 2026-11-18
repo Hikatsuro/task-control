@@ -38,6 +38,12 @@ function serveLocalPeople(folder: string): Plugin {
 }
 
 const modelFolder = process.env.TASKCONTROL_LOCAL_MODELS_DIR;
+const proxy = {
+  '/api': {
+    target: process.env.TASKCONTROL_BACKEND_URL || 'http://127.0.0.1:8012',
+    changeOrigin: false,
+  },
+};
 if (modelFolder && !modelNames.every((name) => existsSync(join(modelFolder, `${name}.glb`)))) {
   throw new Error('TASKCONTROL_LOCAL_MODELS_DIR must contain all four TaskControl GLB files.');
 }
@@ -62,10 +68,11 @@ export default defineConfig({
     },
   },
   server: {
+    proxy,
     port: 5173,
     strictPort: true,
     watch: { ignored: ['**/playwright-report/**', '**/test-results/**', '**/qa/**'] },
   },
-  preview: { port: 4173, strictPort: true },
+  preview: { port: 4173, strictPort: true, proxy },
   test: { include: ['src/**/*.test.ts'] },
 });

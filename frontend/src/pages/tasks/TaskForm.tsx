@@ -26,7 +26,7 @@ import { useWorkspace } from '../../state/workspace-context';
 export function TaskForm() {
   const { id } = useParams();
   const [params] = useSearchParams();
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   const task = data.tasks.find((t) => t.id === id);
   const [projectId, setProjectId] = useState(task?.projectId ?? params.get('project') ?? '');
@@ -40,23 +40,20 @@ export function TaskForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const ok = await transact(
-      (d, a) =>
-        saveTask(
-          d,
-          a,
-          {
-            title: String(f.get('title')),
-            description: String(f.get('description')),
-            projectId: String(f.get('projectId')),
-            assigneeId: String(f.get('assigneeId')),
-            dueDate: String(f.get('dueDate')),
-            priority: String(f.get('priority')) as Priority,
-          },
-          id,
-        ),
-      id ? 'Задача обновлена.' : 'Задача создана.',
-    );
+    const input = {
+      title: String(f.get('title')),
+      description: String(f.get('description')),
+      projectId: String(f.get('projectId')),
+      assigneeId: String(f.get('assigneeId')),
+      dueDate: String(f.get('dueDate')),
+      priority: String(f.get('priority')) as Priority,
+    };
+    const ok = server
+      ? await server.saveTask(input, id)
+      : await transact(
+          (d, a) => saveTask(d, a, input, id),
+          id ? 'Задача обновлена.' : 'Задача создана.',
+        );
     if (ok) navigate(id ? `/app/tasks/${id}` : '/app/tasks');
   }
   return (
@@ -140,9 +137,11 @@ export function TaskForm() {
             <Field
               label="Срок выполнения"
               hint={
-                project
+                project?.startDate && project.dueDate
                   ? `В пределах проекта: ${formatDate(project.startDate)} — ${formatDate(project.dueDate)}`
-                  : 'Сначала выберите проект'
+                  : project
+                    ? undefined
+                    : 'Сначала выберите проект'
               }
             >
               <input

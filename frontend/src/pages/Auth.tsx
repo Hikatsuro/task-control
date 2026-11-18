@@ -4,13 +4,32 @@ import { ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useWorkspace } from '../state/workspace-context';
 import { roleLabels } from '../domain/model';
 import { Avatar, Brand, Button, CheckLine, Field, Notice } from '../components/ui';
+import { DjangoError, write } from '../data/django';
 
 export function Auth({ mode = 'login' }: { mode?: 'login' | 'forgot' | 'reset' }) {
-  const { data, signIn, user, notify } = useWorkspace();
+  const { data, signIn, user, notify, server, ready, busy } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
   const [selected, setSelected] = useState('u1');
   const [submitted, setSubmitted] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const resetParams = new URLSearchParams(location.search);
+  async function reset(path: string, data: object) {
+    setResetBusy(true);
+    try {
+      await write(path, 'POST', data);
+      setSubmitted(true);
+    } catch (error) {
+      notify(
+        error instanceof DjangoError ? error.message : 'Не удалось связаться с сервером.',
+        'error',
+      );
+    } finally {
+      setResetBusy(false);
+    }
+  }
+  if (server && mode === 'login' && user)
+    return <Navigate to={location.state?.from ?? '/app'} replace />;
   if (mode === 'login' && user && location.state?.from)
     return <Navigate to={location.state.from} replace />;
   return (
@@ -57,7 +76,35 @@ export function Auth({ mode = 'login' }: { mode?: 'login' | 'forgot' | 'reset' }
                 ? 'ВОССТАНОВИТЬ ДОСТУП'
                 : 'НОВЫЙ ПАРОЛЬ'}
           </h2>
-          {mode === 'login' ? (
+          {mode === 'login' && server ? (
+            <>
+              <p>Войди, чтобы открыть свои проекты и задачи.</p>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const fields = new FormData(event.currentTarget);
+                  void server.signIn(
+                    String(fields.get('username')),
+                    String(fields.get('password')),
+                  );
+                }}
+              >
+                <Field label="Логин" required>
+                  <input name="username" autoComplete="username" required />
+                </Field>
+                <Field label="Пароль" required>
+                  <input name="password" type="password" autoComplete="current-password" required />
+                </Field>
+                <Button type="submit" className="full-width" disabled={!ready || busy}>
+                  {busy ? 'Входим…' : 'Войти в рабочее пространство'} <ArrowRight size={17} />
+                </Button>
+              </form>
+              <div className="auth-links">
+                <Link to="/forgot-password">Забыли пароль?</Link>
+                <Link to="/">О системе</Link>
+              </div>
+            </>
+          ) : mode === 'login' ? (
             <>
               <p>Открой рабочее пространство от лица участника команды.</p>
               <Notice>
@@ -109,21 +156,34 @@ export function Auth({ mode = 'login' }: { mode?: 'login' | 'forgot' | 'reset' }
             </>
           ) : mode === 'forgot' ? (
             <>
-              <p>Макет восстановления доступа для будущей серверной авторизации.</p>
+              <p>
+                {server
+                  ? 'Введи адрес, указанный в профиле.'
+                  : 'Демонстрация восстановления доступа.'}
+              </p>
               {submitted ? (
                 <>
                   <Notice tone="success">
-                    Демонстрационный запрос обработан. Письмо не отправляется: почтовый сервис ещё
-                    не подключён.
+                    {server
+                      ? 'Если адрес есть в системе, сервер подготовит ссылку для смены пароля.'
+                      : 'Демонстрационный запрос обработан. Письмо не отправлено.'}
                   </Notice>
-                  <Link to="/reset-password" className="button button-primary">
-                    Продолжить демонстрацию
-                  </Link>
+                  {!server && (
+                    <Link to="/reset-password" className="button button-primary">
+                      Продолжить демонстрацию
+                    </Link>
+                  )}
                 </>
               ) : (
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
+                    if (server) {
+                      void reset('/auth/request-reset/', {
+                        email: new FormData(e.currentTarget).get('email'),
+                      });
+                      return;
+                    }
                     setSubmitted(true);
                   }}
                 >
@@ -136,7 +196,9 @@ export function Auth({ mode = 'login' }: { mode?: 'login' | 'forgot' | 'reset' }
                       autoComplete="email"
                     />
                   </Field>
-                  <Button type="submit">Показать следующий шаг</Button>
+                  <Button type="submit" disabled={resetBusy}>
+                    {server ? 'Запросить ссылку' : 'Показать следующий шаг'}
+                  </Button>
                 </form>
               )}
               <Link to="/login" className="back-link">
@@ -147,43 +209,64 @@ export function Auth({ mode = 'login' }: { mode?: 'login' | 'forgot' | 'reset' }
           ) : (
             <>
               <p>
-                Демонстрация формы. Настоящее изменение пароля будет доступно после подключения
-                сервера.
+                {server
+                  ? 'Задай новый пароль для учётной записи.'
+                  : 'Демонстрация формы изменения пароля.'}
               </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = new FormData(e.currentTarget);
-                  if (form.get('password') !== form.get('confirm')) {
-                    notify('Пароли не совпадают.', 'error');
-                    return;
-                  }
-                  setSubmitted(true);
-                }}
-              >
-                <Field label="Новый пароль" required>
-                  <input
-                    type="password"
-                    name="password"
-                    minLength={8}
-                    required
-                    autoComplete="new-password"
-                  />
-                </Field>
-                <Field label="Повторите пароль" required>
-                  <input
-                    type="password"
-                    name="confirm"
-                    minLength={8}
-                    required
-                    autoComplete="new-password"
-                  />
-                </Field>
-                <Button type="submit">Проверить форму</Button>
-              </form>
+              {server && (!resetParams.has('uid') || !resetParams.has('token')) ? (
+                <Notice tone="warning">
+                  Открой ссылку из письма или <Link to="/forgot-password">запроси новую</Link>.
+                </Notice>
+              ) : (
+                !submitted && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = new FormData(e.currentTarget);
+                      if (form.get('password') !== form.get('confirm')) {
+                        notify('Пароли не совпадают.', 'error');
+                        return;
+                      }
+                      if (server) {
+                        void reset('/auth/confirm-reset/', {
+                          uid: resetParams.get('uid'),
+                          token: resetParams.get('token'),
+                          password: form.get('password'),
+                        });
+                        return;
+                      }
+                      setSubmitted(true);
+                    }}
+                  >
+                    <Field label="Новый пароль" required>
+                      <input
+                        type="password"
+                        name="password"
+                        minLength={8}
+                        required
+                        autoComplete="new-password"
+                      />
+                    </Field>
+                    <Field label="Повторите пароль" required>
+                      <input
+                        type="password"
+                        name="confirm"
+                        minLength={8}
+                        required
+                        autoComplete="new-password"
+                      />
+                    </Field>
+                    <Button type="submit" disabled={resetBusy}>
+                      {server ? 'Сохранить новый пароль' : 'Проверить форму'}
+                    </Button>
+                  </form>
+                )
+              )}
               {submitted && (
                 <Notice tone="success">
-                  Форма заполнена правильно. Пароль никуда не отправлен и не сохранён.
+                  {server
+                    ? 'Пароль обновлён. Можно войти с новым паролем.'
+                    : 'Форма заполнена правильно. Пароль не сохранён.'}
                 </Notice>
               )}
               <Link to="/login" className="back-link">

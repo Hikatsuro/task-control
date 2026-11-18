@@ -1,4 +1,5 @@
 from rest_framework.test import APIClient, APITestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from .models import Customer, Project, Role, Task, User
 
@@ -81,9 +82,78 @@ class AccessTests(APITestCase):
         self.assertEqual(e.patch(url, {"status": "in_progress"}).json()["status"], "in_progress")
         self.assertEqual(e.patch(url, {"status": "review"}).json()["status"], "review")
         self.assertEqual(e.patch(url, {"status": "done"}).status_code, 403)
-        self.assertEqual(m.patch(url, {"status": "in_progress"}).json()["status"], "in_progress")
+        self.assertEqual(m.patch(url, {"status": "in_progress", "return_reason": "Уточнить описание"}).json()["status"], "in_progress")
         e.patch(url, {"status": "review"})
         self.assertEqual(m.patch(url, {"status": "done"}).json()["status"], "done")
 
     def test_other_manager_cannot_edit(self):
         self.assertEqual(self.as_(self.m2).patch(f"/api/tasks/{self.t1.id}/", {"title": "x"}).status_code, 404)
+
+    def test_full_workspace_persists_and_limits_access_by_role(self):
+        employee, manager, other, admin = map(self.as_, [self.e1, self.m1, self.e2, self.admin])
+        url = "/api/workspace/commands/"
+        customer = {"action": "customer", "data": {"name": "Учебный заказчик", "phone": "100"}}
+        self.assertEqual(employee.post(url, customer, format="json").status_code, 403)
+        self.assertEqual(manager.post(url, customer, format="json").status_code, 204)
+        self.assertTrue(any(c["name"] == "Учебный заказчик" for c in manager.get("/api/workspace/").json()["customers"]))
+        department = {"action": "department", "data": {"name": "Продукт", "members": [self.e1.pk]}}
+        self.assertEqual(admin.post(url, department, format="json").status_code, 204)
+        self.assertEqual(admin.get("/api/workspace/").json()["departments"][0]["name"], "Продукт")
+        archive = {"action": "project", "id": self.p1.pk, "data": {"is_archived": True}}
+        self.assertEqual(manager.post(url, archive, format="json").status_code, 400)
+        comment = {"action": "comment", "task": self.t1.pk, "data": {"text": "Готово к обсуждению"}}
+        self.assertEqual(other.post(url, comment, format="json").status_code, 404)
+        self.assertEqual(employee.post(url, comment, format="json").status_code, 204)
+        task = next(t for t in manager.get("/api/workspace/").json()["tasks"] if t["id"] == self.t1.pk)
+        self.assertEqual(task["comments"][0]["text"], "Готово к обсуждению")
+        deletion = {"action": "delete-comment", "task": self.t1.pk, "id": task["comments"][0]["id"]}
+        self.assertEqual(manager.post(url, deletion, format="json").status_code, 404)
+        upload = SimpleUploadedFile("brief.txt", b"example", content_type="text/plain")
+        files = f"/api/tasks/{self.t1.pk}/files/"
+        self.assertEqual(employee.post(files, {"file": upload}, format="multipart").status_code, 201)
+        file_id = manager.get(f"/api/tasks/{self.t1.pk}/").json()["attachments"][0]["id"]
+        self.assertEqual(other.get(f"{files}{file_id}/").status_code, 404)
+        self.assertEqual(b"".join(manager.get(f"{files}{file_id}/").streaming_content), b"example")
+        self.assertEqual(manager.delete(f"{files}{file_id}/").status_code, 404)
+        self.assertEqual(employee.delete(f"{files}{file_id}/").status_code, 204)
+        notices = manager.get("/api/workspace/").json()["notifications"]
+        notice = next(n for n in notices if n["title"] == "Новый комментарий")
+        request = {"action": "notification", "id": notice["id"], "data": {"read": True}}
+        self.assertEqual(other.post(url, request, format="json").status_code, 404)
+        self.assertEqual(manager.post(url, request, format="json").status_code, 204)
+
+    def test_browser_session_and_scoped_task_context(self):
+        def signed_in(username):
+            client = APIClient(enforce_csrf_checks=True)
+            token = client.get("/api/auth/csrf/").json()["csrf_token"]
+            response = client.post("/api/auth/login/", {"username": username, "password": "pw"},
+                                   format="json", HTTP_X_CSRFTOKEN=token)
+            self.assertEqual(response.status_code, 200)
+            return client
+
+        def write(client, verb, path, data):
+            token = client.get("/api/auth/csrf/").json()["csrf_token"]
+            return getattr(client, verb)(path, data, format="json", HTTP_X_CSRFTOKEN=token)
+
+        manager, employee = signed_in("m1"), signed_in("e1")
+        self.assertEqual(manager.get(f"/api/projects/{self.p1.id}/members/").json()[0]["id"], self.e1.id)
+        created = write(manager, "post", "/api/tasks/", {"project": self.p1.id, "title": "Сценарий M2", "assignee": self.e1.id})
+        self.assertEqual(created.status_code, 201)
+        task_id = created.json()["id"]
+        task_url = f"/api/tasks/{task_id}/"
+        for client, state in [(employee, "in_progress"), (employee, "review"), (manager, "in_progress"),
+                              (employee, "review"), (manager, "done")]:
+            data = {"status": state}
+            if client is manager and state == "in_progress":
+                data["return_reason"] = "Уточнить описание"
+            self.assertEqual(write(client, "patch", task_url, data).json()["status"], state)
+        context_url = f"/api/projects/{self.p1.id}/task-context/"
+        item = next(task for task in employee.get(context_url).json() if task["id"] == task_id)
+        self.assertEqual(item["card_url"], f"/app/tasks/{task_id}")
+        self.assertEqual(item["status"], "done")
+        self.assertEqual(signed_in("e2").get(context_url).status_code, 404)
+        workspace = employee.get("/api/workspace/").json()
+        self.assertNotIn(self.t2.id, [task["id"] for task in workspace["tasks"]])
+        updated = next(task for task in workspace["tasks"] if task["id"] == task_id)
+        self.assertIsNotNone(updated["completed_at"])
+        self.assertTrue(any("Уточнить описание" in event["text"] for event in updated["events"]))
