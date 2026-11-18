@@ -20,7 +20,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ActionLink, Avatar, PageHeading, PriorityBadge, Screen } from '../../components/ui';
 import type { Status, Task } from '../../domain/model';
-import { formatDate, isOverdue, statuses, statusLabels, transition } from '../../domain/model';
+import {
+  formatDate,
+  isOverdue,
+  nextStatuses,
+  statuses,
+  statusLabels,
+  transition,
+} from '../../domain/model';
 import { useWorkspace } from '../../state/workspace-context';
 import { TaskFilters } from './TaskFilters';
 import { useFilteredTasks } from './useFilteredTasks';
@@ -98,7 +105,7 @@ function BoardLane({ status, tasks }: { status: Status; tasks: Task[] }) {
 
 export function Board() {
   const { tasks, user, data } = useFilteredTasks();
-  const { transact } = useWorkspace();
+  const { transact, server, notify, busy } = useWorkspace();
   const navigate = useNavigate();
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
@@ -129,12 +136,19 @@ export function Board() {
           setActiveId(null);
           const task = tasks.find((t) => t.id === e.active.id);
           const status = e.over?.id as Status | undefined;
-          if (!task || !status || task.status === status || !statuses.includes(status)) return;
+          if (!task || !status || task.status === status || !statuses.includes(status) || busy)
+            return;
+          const project = data.projects.find((item) => item.id === task.projectId);
+          if (server && (!project || !nextStatuses(user, task, project, true).includes(status))) {
+            notify('Этот переход недоступен для вашей роли.', 'error');
+            return;
+          }
           if (task.status === 'in_review' && status === 'in_progress') {
             navigate(`/app/tasks/${task.id}?return=1`);
             return;
           }
-          void transact((d, a) => transition(d, a, task.id, status), 'Задача перемещена.');
+          if (server) void server.changeStatus(task.id, status);
+          else void transact((d, a) => transition(d, a, task.id, status), 'Задача перемещена.');
         }}
       >
         <div className="kanban-board">

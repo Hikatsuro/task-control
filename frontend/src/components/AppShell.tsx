@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Bell, ChevronDown, HelpCircle, LogOut, Menu, Settings, X } from 'lucide-react';
+import { Bell, ChevronDown, HelpCircle, LogOut, Menu, RefreshCcw, Settings, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useWorkspace } from '../state/workspace-context';
 import { formatDate, roleLabels } from '../domain/model';
@@ -19,7 +19,7 @@ const businessNav = [
   ['billing', '/app/billing', 'Тариф'],
 ] as const;
 export function AppShell() {
-  const { data, user, ready, signOut } = useWorkspace();
+  const { data, user, ready, signOut, server, busy } = useWorkspace();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   useEffect(() => {
@@ -136,22 +136,47 @@ export function AppShell() {
               <Bell size={18} />
               {unread > 0 && <span>{unread}</span>}
             </Link>
-            <Link
-              to="/login"
-              onClick={signOut}
-              className="icon-button"
-              aria-label="Выйти из демопрофиля"
-            >
-              <LogOut size={18} />
-            </Link>
+            {server ? (
+              <button
+                type="button"
+                onClick={signOut}
+                disabled={busy}
+                className="icon-button"
+                aria-label="Выйти"
+              >
+                <LogOut size={18} />
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                onClick={signOut}
+                className="icon-button"
+                aria-label="Выйти из демопрофиля"
+              >
+                <LogOut size={18} />
+              </Link>
+            )}
           </div>
         </header>
         <div className="demo-strip">
           <span className="demo-dot" />
-          <span>Локальная демоверсия</span>
+          <span>{server ? 'Данные из Django' : 'Локальная демоверсия'}</span>
           <span className="demo-divider">·</span>
-          <span className="demo-persistence">Изменения сохраняются в этом браузере</span>
-          <Link to="/login">Сменить профиль</Link>
+          {server ? (
+            <button
+              type="button"
+              onClick={() => void server.refresh()}
+              disabled={busy}
+              className="text-link"
+            >
+              <RefreshCcw size={14} /> Обновить данные
+            </button>
+          ) : (
+            <>
+              <span className="demo-persistence">Изменения сохраняются в этом браузере</span>
+              <Link to="/login">Сменить профиль</Link>
+            </>
+          )}
         </div>
         <main id="main-content" tabIndex={-1} className="app-content">
           <Suspense

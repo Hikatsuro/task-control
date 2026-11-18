@@ -38,7 +38,8 @@ import {
   nextStatuses,
   transition,
 } from '../../domain/model';
-import { useWorkspace } from '../../state/workspace-context';
+import { persist, useWorkspace } from '../../state/workspace-context';
+import type { Status } from '../../domain/model';
 
 export function TaskDetail({
   historyOnly = false,
@@ -49,7 +50,7 @@ export function TaskDetail({
 }) {
   const { id } = useParams();
   const [params] = useSearchParams();
-  const { data, user, transact, notify, busy } = useWorkspace();
+  const { data, user, transact, notify, busy, server } = useWorkspace();
   const [tab, setTab] = useState(historyOnly ? 'history' : 'description');
   const [returnOpen, setReturnOpen] = useState(returnOnly || params.get('return') === '1');
   const [deleting, setDeleting] = useState<{ kind: 'comment' | 'file'; id: string } | null>(null);
@@ -59,8 +60,21 @@ export function TaskDetail({
   if (!user) return null;
   if (!task || !project || !canViewTask(user, task, project)) return <NotFound forbidden />;
   const manage = canManageProject(user, project);
-  const allowed = nextStatuses(user, task, project);
+  const allowed = nextStatuses(user, task, project, Boolean(server));
   const assignee = data.users.find((u) => u.id === task.assigneeId);
+  function changeStatus(status: Status, reason?: string) {
+    if (!task) return Promise.resolve(false);
+    return server
+      ? server.changeStatus(task.id, status, reason)
+      : transact(
+          (d, a) => transition(d, a, task.id, status, reason),
+          reason
+            ? 'Задача возвращена на доработку.'
+            : status === 'done'
+              ? 'Работа принята.'
+              : 'Статус задачи обновлён.',
+        );
+  }
   async function upload(file: File) {
     if (!task || !user) return;
     if (file.size > MAX_FILE_SIZE) {
@@ -68,6 +82,14 @@ export function TaskDetail({
       return;
     }
     setUploading(true);
+    if (server) {
+      try {
+        await server.upload(task.id, file);
+      } finally {
+        setUploading(false);
+      }
+      return;
+    }
     const attachment = {
       id: newId('attachment'),
       name: file.name,
@@ -91,7 +113,12 @@ export function TaskDetail({
   }
   async function download(fileId: string, name: string) {
     try {
-      const blob = await attachmentRepository.read(fileId);
+      let blob;
+      if (server && task) {
+        const response = await fetch(`/api/tasks/${task.id}/files/${fileId}/`);
+        if (!response.ok) throw new Error('Файл недоступен.');
+        blob = await response.blob();
+      } else blob = await attachmentRepository.read(fileId);
       if (!blob) throw new Error('Файл не найден в хранилище этого браузера.');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -198,7 +225,9 @@ export function TaskDetail({
                   e.preventDefault();
                   const form = e.currentTarget;
                   const text = String(new FormData(form).get('comment'));
-                  void transact(
+                  void persist(
+                    { server, transact },
+                    { action: 'comment', task: task.id, data: { text } },
                     (d, a) => addComment(d, a, task.id, text),
                     'Комментарий добавлен.',
                   ).then((ok) => {
@@ -223,7 +252,10 @@ export function TaskDetail({
           ) : tab === 'files' ? (
             <Panel title="Прикреплённые файлы">
               <Notice>
-                Файлы сохраняются в этом браузере. Максимальный размер одного файла — 10 МБ.
+                {server
+                  ? 'Файлы доступны участникам, которые видят задачу.'
+                  : 'Файлы сохраняются в этом браузере.'}{' '}
+                Максимальный размер одного файла — 10 МБ.
               </Notice>
               <Field label={uploading ? 'Сохраняем файл…' : 'Добавить файл'}>
                 <input
@@ -328,7 +360,11 @@ export function TaskDetail({
                 <dt>Фактически выполнена</dt>
                 <dd>
                   <Clock3 size={16} />
-                  {task.completedAt ? formatDate(task.completedAt) : 'Работа не принята'}
+                  {task.completedAt
+                    ? formatDate(task.completedAt)
+                    : task.status === 'done'
+                      ? 'Дата приёмки не зафиксирована'
+                      : 'Работа не принята'}
                 </dd>
               </div>
             </dl>
@@ -346,11 +382,7 @@ export function TaskDetail({
                     onClick={() => {
                       if (task.status === 'in_review' && status === 'in_progress')
                         setReturnOpen(true);
-                      else
-                        void transact(
-                          (d, a) => transition(d, a, task.id, status),
-                          status === 'done' ? 'Работа принята.' : 'Статус задачи обновлён.',
-                        );
+                      else void changeStatus(status);
                     }}
                   >
                     {status === 'done'
@@ -389,10 +421,7 @@ export function TaskDetail({
           onSubmit={(e) => {
             e.preventDefault();
             const reason = String(new FormData(e.currentTarget).get('reason'));
-            void transact(
-              (d, a) => transition(d, a, task.id, 'in_progress', reason),
-              'Задача возвращена на доработку.',
-            ).then((ok) => {
+            void changeStatus('in_progress', reason.trim()).then((ok) => {
               if (ok) setReturnOpen(false);
             });
           }}
@@ -421,16 +450,22 @@ export function TaskDetail({
         onConfirm={() => {
           if (!deleting) return;
           const item = deleting;
-          void transact(
-            (d, a) =>
-              item.kind === 'comment'
-                ? removeComment(d, a, task.id, item.id)
-                : removeAttachment(d, a, task.id, item.id),
-            'Удалено.',
-          ).then(async (ok) => {
+          const remove =
+            item.kind === 'file' && server
+              ? server.removeFile(task.id, item.id)
+              : persist(
+                  { server, transact },
+                  { action: 'delete-comment', task: task.id, id: item.id },
+                  (d, a) =>
+                    item.kind === 'comment'
+                      ? removeComment(d, a, task.id, item.id)
+                      : removeAttachment(d, a, task.id, item.id),
+                  'Удалено.',
+                );
+          void remove.then(async (ok) => {
             if (ok) {
               setDeleting(null);
-              if (item.kind === 'file')
+              if (item.kind === 'file' && !server)
                 try {
                   await attachmentRepository.remove(item.id);
                 } catch {

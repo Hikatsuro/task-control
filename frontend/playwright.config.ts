@@ -21,5 +21,9 @@ export default defineConfig({
       },
     },
   ],
-  webServer: { command: 'npm run dev', url: 'http://127.0.0.1:5173', reuseExistingServer: true },
+  webServer: {
+    command: 'npm run dev',
+    env: { VITE_DEMO_MODE: 'true' },
+    url: 'http://127.0.0.1:5173',
+  },
 });

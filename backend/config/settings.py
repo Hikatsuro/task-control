@@ -53,9 +53,19 @@ else:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 
 AUTH_USER_MODEL = "core.User"
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 LANGUAGE_CODE = "ru"
 TIME_ZONE = "Asia/Almaty"
 USE_TZ = True
+EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_FROM_EMAIL", "taskcontrol@example.test")
+TASKCONTROL_FRONTEND_URL = os.environ.get("TASKCONTROL_FRONTEND_URL", "http://127.0.0.1:5187").rstrip("/")
+PASSWORD_RESET_TIMEOUT = 3600
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -63,4 +73,5 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_THROTTLE_RATES": {"reset": "8/hour"},
 }

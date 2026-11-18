@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Check, KeyRound, Moon, RotateCcw, Settings2, Sun, UserRound } from 'lucide-react';
-import { useWorkspace } from '../state/workspace-context';
+import { persist, useWorkspace } from '../state/workspace-context';
 import { setTheme, useTheme } from '../state/theme';
 import { formatDate, requireCondition, roleLabels } from '../domain/model';
 import {
@@ -19,7 +19,7 @@ import {
 } from '../components/ui';
 
 export function Notifications() {
-  const { data, user, transact } = useWorkspace();
+  const { data, user, transact, server } = useWorkspace();
   const [tab, setTab] = useState('all');
   if (!user) return null;
   const notifications = data.notifications.filter(
@@ -34,7 +34,9 @@ export function Notifications() {
           <Button
             variant="secondary"
             onClick={() =>
-              void transact(
+              void persist(
+                { server, transact },
+                { action: 'notifications', data: { read: true } },
                 (d, a) => ({
                   ...d,
                   notifications: d.notifications.map((n) =>
@@ -84,12 +86,16 @@ export function Notifications() {
                     to={`/app/tasks/${n.taskId}`}
                     className="text-link"
                     onClick={() =>
-                      void transact((d, a) => ({
-                        ...d,
-                        notifications: d.notifications.map((x) =>
-                          x.id === n.id && x.userId === a.id ? { ...x, read: true } : x,
-                        ),
-                      }))
+                      void persist(
+                        { server, transact },
+                        { action: 'notification', id: n.id, data: { read: true } },
+                        (d, a) => ({
+                          ...d,
+                          notifications: d.notifications.map((x) =>
+                            x.id === n.id && x.userId === a.id ? { ...x, read: true } : x,
+                          ),
+                        }),
+                      )
                     }
                   >
                     Открыть задачу
@@ -98,12 +104,16 @@ export function Notifications() {
                 <Button
                   variant="ghost"
                   onClick={() =>
-                    void transact((d, a) => ({
-                      ...d,
-                      notifications: d.notifications.map((x) =>
-                        x.id === n.id && x.userId === a.id ? { ...x, read: !x.read } : x,
-                      ),
-                    }))
+                    void persist(
+                      { server, transact },
+                      { action: 'notification', id: n.id, data: { read: !n.read } },
+                      (d, a) => ({
+                        ...d,
+                        notifications: d.notifications.map((x) =>
+                          x.id === n.id && x.userId === a.id ? { ...x, read: !x.read } : x,
+                        ),
+                      }),
+                    )
                   }
                 >
                   {n.read ? 'В непрочитанные' : 'Прочитано'}
@@ -122,7 +132,7 @@ export function Notifications() {
   );
 }
 export function Profile() {
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server, signOut } = useWorkspace();
   if (!user) return null;
   return (
     <Screen>
@@ -133,23 +143,35 @@ export function Profile() {
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
-              void transact((d, a) => {
-                const name = String(f.get('name')).trim();
-                requireCondition(name.length >= 2, 'Имя должно содержать минимум 2 символа.');
-                return {
-                  ...d,
-                  users: d.users.map((u) =>
-                    u.id === a.id
-                      ? {
-                          ...u,
-                          name,
-                          email: String(f.get('email')),
-                          position: String(f.get('position')),
-                        }
-                      : u,
-                  ),
-                };
-              }, 'Профиль обновлён.');
+              void persist(
+                { server, transact },
+                {
+                  action: 'profile',
+                  data: {
+                    name: String(f.get('name')),
+                    email: String(f.get('email')),
+                    position: String(f.get('position')),
+                  },
+                },
+                (d, a) => {
+                  const name = String(f.get('name')).trim();
+                  requireCondition(name.length >= 2, 'Имя должно содержать минимум 2 символа.');
+                  return {
+                    ...d,
+                    users: d.users.map((u) =>
+                      u.id === a.id
+                        ? {
+                            ...u,
+                            name,
+                            email: String(f.get('email')),
+                            position: String(f.get('position')),
+                          }
+                        : u,
+                    ),
+                  };
+                },
+                'Профиль обновлён.',
+              );
             }}
           >
             <div className="profile-hero">
@@ -196,10 +218,17 @@ export function Profile() {
               <Bell size={19} />
               Настройки уведомлений
             </Link>
-            <Link to="/login">
-              <UserRound size={19} />
-              Выбрать другой демопрофиль
-            </Link>
+            {server ? (
+              <Button variant="secondary" disabled={busy} onClick={signOut}>
+                <UserRound size={19} />
+                Выйти из аккаунта
+              </Button>
+            ) : (
+              <Link to="/login">
+                <UserRound size={19} />
+                Выбрать другой демопрофиль
+              </Link>
+            )}
           </div>
         </Panel>
       </div>
@@ -207,21 +236,23 @@ export function Profile() {
   );
 }
 export function Security() {
-  const { notify } = useWorkspace();
+  const { notify, server, busy } = useWorkspace();
   const [checked, setChecked] = useState(false);
   return (
     <Screen>
       <PageHeading
         title="Пароль и безопасность"
         back="/app/profile"
-        description="Подготовленная форма для будущей серверной авторизации."
+        description="Управляйте паролем своей учётной записи."
       />
       <div className="form-single">
         <Panel title="Изменение пароля">
-          <Notice>
-            Сейчас используется выбор демонстрационного профиля без пароля. Здесь можно проверить
-            заполнение формы; изменение пароля не выполняется.
-          </Notice>
+          {!server && (
+            <Notice>
+              Сейчас используется выбор демонстрационного профиля без пароля. Здесь можно проверить
+              заполнение формы; изменение пароля не выполняется.
+            </Notice>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -230,12 +261,30 @@ export function Security() {
                 notify('Новые пароли не совпадают.', 'error');
                 return;
               }
+              if (server) {
+                const form = e.currentTarget;
+                void server
+                  .command(
+                    {
+                      action: 'password',
+                      data: {
+                        current: String(f.get('current')),
+                        password: String(f.get('password')),
+                      },
+                    },
+                    'Пароль изменён.',
+                  )
+                  .then((ok) => {
+                    if (ok) form.reset();
+                  });
+                return;
+              }
               setChecked(true);
               e.currentTarget.reset();
             }}
           >
             <Field label="Текущий пароль">
-              <input type="password" autoComplete="current-password" required />
+              <input name="current" type="password" autoComplete="current-password" required />
             </Field>
             <Field label="Новый пароль" hint="Не меньше 8 символов">
               <input
@@ -255,7 +304,9 @@ export function Security() {
                 autoComplete="new-password"
               />
             </Field>
-            <Button type="submit">Проверить заполнение</Button>
+            <Button type="submit" disabled={busy}>
+              {server ? 'Изменить пароль' : 'Проверить заполнение'}
+            </Button>
           </form>
           {checked && (
             <Notice tone="success">
@@ -268,7 +319,7 @@ export function Security() {
   );
 }
 export function Settings({ notificationsOnly = false }: { notificationsOnly?: boolean }) {
-  const { data, user, transact, busy, resetDemo } = useWorkspace();
+  const { data, user, transact, busy, resetDemo, server } = useWorkspace();
   const theme = useTheme();
   const [themeSaveFailed, setThemeSaveFailed] = useState(false);
   const [reset, setReset] = useState(false);
@@ -337,15 +388,26 @@ export function Settings({ notificationsOnly = false }: { notificationsOnly?: bo
               onSubmit={(e) => {
                 e.preventDefault();
                 const f = new FormData(e.currentTarget);
-                void transact((d, a) => {
-                  requireCondition(a.role === 'admin', 'Настройки команды меняет администратор.');
-                  const name = String(f.get('name')).trim();
-                  requireCondition(name.length >= 2, 'Укажите название команды.');
-                  return {
-                    ...d,
-                    settings: { ...d.settings, name, description: String(f.get('description')) },
-                  };
-                }, 'Настройки команды сохранены.');
+                void persist(
+                  { server, transact },
+                  {
+                    action: 'settings',
+                    data: {
+                      name: String(f.get('name')),
+                      description: String(f.get('description')),
+                    },
+                  },
+                  (d, a) => {
+                    requireCondition(a.role === 'admin', 'Настройки команды меняет администратор.');
+                    const name = String(f.get('name')).trim();
+                    requireCondition(name.length >= 2, 'Укажите название команды.');
+                    return {
+                      ...d,
+                      settings: { ...d.settings, name, description: String(f.get('description')) },
+                    };
+                  },
+                  'Настройки команды сохранены.',
+                );
               }}
             >
               <Field label="Название команды">
@@ -378,14 +440,19 @@ export function Settings({ notificationsOnly = false }: { notificationsOnly?: bo
         )}
         <Panel title="Уведомления внутри системы">
           <p className="muted">
-            Предпочтения сохраняются для текущего демопрофиля. Напоминания о сроках рассчитываются
-            при открытии приложения.
+            Предпочтения сохраняются для текущего профиля. Напоминания о сроках рассчитываются при
+            открытии приложения.
           </p>
           <form
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
-              void transact(
+              void persist(
+                { server, transact },
+                {
+                  action: 'preferences',
+                  data: Object.fromEntries(preferences.map(([key]) => [key, f.get(key) === 'on'])),
+                },
                 (d, a) => ({
                   ...d,
                   settings: {
@@ -437,41 +504,47 @@ export function Settings({ notificationsOnly = false }: { notificationsOnly?: bo
                   checked={data.settings.notifications[`${user.id}:reducedMotion`] ?? false}
                   onChange={(e) => {
                     const checked = e.target.checked;
-                    void transact((d, a) => ({
-                      ...d,
-                      settings: {
-                        ...d.settings,
-                        notifications: {
-                          ...d.settings.notifications,
-                          [`${a.id}:reducedMotion`]: checked,
+                    void persist(
+                      { server, transact },
+                      { action: 'preferences', data: { reducedMotion: checked } },
+                      (d, a) => ({
+                        ...d,
+                        settings: {
+                          ...d.settings,
+                          notifications: {
+                            ...d.settings.notifications,
+                            [`${a.id}:reducedMotion`]: checked,
+                          },
                         },
-                      },
-                    }));
+                      }),
+                    );
                   }}
                 />
               </label>
               <p className="muted">Системная настройка уменьшения движения тоже учитывается.</p>
             </Panel>
-            <Panel title="Демонстрационные данные">
-              <p>
-                Все изменения хранятся локально. Сброс возвращает исходные проекты, задачи и профили
-                в этом браузере.
-              </p>
-              {user.role === 'admin' ? (
-                <Button variant="secondary" onClick={() => setReset(true)}>
-                  <RotateCcw size={17} />
-                  Восстановить исходный набор
-                </Button>
-              ) : (
-                <Notice>
-                  <Settings2 size={18} />
-                  Сброс доступен через профиль администратора.
-                </Notice>
-              )}
-              <ActionLink to="/app/help/screens" secondary>
-                Посмотреть карту экранов
-              </ActionLink>
-            </Panel>
+            {!server && (
+              <Panel title="Демонстрационные данные">
+                <p>
+                  Все изменения хранятся локально. Сброс возвращает исходные проекты, задачи и
+                  профили в этом браузере.
+                </p>
+                {user.role === 'admin' ? (
+                  <Button variant="secondary" onClick={() => setReset(true)}>
+                    <RotateCcw size={17} />
+                    Восстановить исходный набор
+                  </Button>
+                ) : (
+                  <Notice>
+                    <Settings2 size={18} />
+                    Сброс доступен через профиль администратора.
+                  </Notice>
+                )}
+                <ActionLink to="/app/help/screens" secondary>
+                  Посмотреть карту экранов
+                </ActionLink>
+              </Panel>
+            )}
           </>
         )}
         <Confirm

@@ -217,9 +217,11 @@ export function assertTaskAccess(data: Workspace, user: User, id: string) {
   );
   return { task, project };
 }
-export function nextStatuses(user: User, task: Task, project: Project): Status[] {
+export function nextStatuses(user: User, task: Task, project: Project, server = false): Status[] {
   if (project.status !== 'active' || !canViewTask(user, task, project)) return [];
-  if (canManageProject(user, project))
+  if (canManageProject(user, project) && server && task.status === 'in_review')
+    return ['done', 'in_progress'];
+  if (canManageProject(user, project) && !server)
     return (
       {
         new: ['in_progress'],
