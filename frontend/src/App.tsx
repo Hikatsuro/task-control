@@ -105,6 +105,7 @@ export function App() {
           <Route path="/workflow" element={<Landing legacyWorkflow />} />
           <Route path="/cinematic" element={<CinematicLanding />} />
           <Route path="/login" element={<Auth key="login" />} />
+          <Route path="/server" element={<Navigate to="/app/projects" replace />} />
           <Route path="/forgot-password" element={<Auth key="forgot" mode="forgot" />} />
           <Route path="/reset-password" element={<Auth key="reset" mode="reset" />} />
           <Route path="/app" element={<AppShell />}>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowUpRight, Plus, Search, ShieldCheck, Users } from 'lucide-react';
-import { useWorkspace } from '../state/workspace-context';
+import { persist, useWorkspace } from '../state/workspace-context';
 import { availableTasks, newId, requireCondition, roleLabels, roles } from '../domain/model';
 import type { Role } from '../domain/model';
 import { saveUser } from '../domain/commands';
@@ -22,7 +22,7 @@ import {
 import { TaskTable } from '../components/TaskTable';
 
 export function Team({ admin = false }: { admin?: boolean }) {
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const [query, setQuery] = useState('');
   const [department, setDepartment] = useState('');
   const [blocking, setBlocking] = useState<string | null>(null);
@@ -150,12 +150,14 @@ export function Team({ admin = false }: { admin?: boolean }) {
         open={!!blocking}
         onClose={() => setBlocking(null)}
         title="Изменить доступ пользователя?"
-        description="Блокировка отключит вход в демонстрационный профиль. Проекты и история сохранятся."
+        description="Блокировка отключит вход. Проекты и история сохранятся."
         busy={busy}
         onConfirm={() => {
           const target = data.users.find((u) => u.id === blocking);
           if (target)
-            void transact(
+            void persist(
+              { server, transact },
+              { action: 'user', id: target.id, data: { is_active: !target.active } },
               (d, a) => saveUser(d, a, { ...target, active: !target.active }, target.id),
               'Доступ пользователя обновлён.',
             ).then((ok) => {
@@ -201,7 +203,7 @@ export function MemberDetail() {
 }
 export function UserForm() {
   const { id } = useParams();
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   if (user?.role !== 'admin') return <NotFound forbidden />;
   const member = data.users.find((u) => u.id === id);
@@ -209,22 +211,32 @@ export function UserForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const ok = await transact(
-      (d, a) =>
-        saveUser(
-          d,
-          a,
-          {
-            name: String(f.get('name')),
-            username: String(f.get('username')),
-            email: String(f.get('email')),
-            role: String(f.get('role')) as Role,
-            departmentId: String(f.get('departmentId')),
-            position: String(f.get('position')),
-            active: f.get('active') === 'on',
-          },
-          id,
-        ),
+    const input = {
+      name: String(f.get('name')),
+      username: String(f.get('username')),
+      email: String(f.get('email')),
+      role: String(f.get('role')) as Role,
+      departmentId: String(f.get('departmentId')),
+      position: String(f.get('position')),
+      active: f.get('active') === 'on',
+    };
+    const ok = await persist(
+      { server, transact },
+      {
+        action: 'user',
+        id,
+        data: {
+          name: input.name,
+          username: input.username,
+          email: input.email,
+          role: input.role,
+          department: input.departmentId || null,
+          position: input.position,
+          is_active: input.active,
+          ...(!id ? { password: String(f.get('password') ?? '') } : {}),
+        },
+      },
+      (d, a) => saveUser(d, a, input, id),
       'Пользователь сохранён.',
     );
     if (ok) navigate('/app/users');
@@ -233,7 +245,7 @@ export function UserForm() {
     <Screen>
       <PageHeading
         title={id ? 'Редактирование пользователя' : 'Создание пользователя'}
-        description="Профиль сразу станет доступен в демонстрационном выборе учётных записей."
+        description="Назначьте роль, отдел и доступ к рабочему пространству."
         back="/app/users"
       />
       <form className="form-single" onSubmit={(e) => void submit(e)}>
@@ -277,6 +289,17 @@ export function UserForm() {
                 ))}
               </select>
             </Field>
+            {server && !id && (
+              <Field label="Начальный пароль" required>
+                <input
+                  name="password"
+                  type="password"
+                  minLength={8}
+                  required
+                  autoComplete="new-password"
+                />
+              </Field>
+            )}
             <Field label="Направление работы">
               <input name="position" maxLength={120} defaultValue={member?.position} />
             </Field>
@@ -285,13 +308,15 @@ export function UserForm() {
             <input type="checkbox" name="active" defaultChecked={member?.active ?? true} />
             Активный профиль
           </label>
-          <Notice>
-            <ShieldCheck size={18} />
-            <span>
-              В этой версии пароль не назначается. Настоящий вход и восстановление доступа
-              подключаются на сервере.
-            </span>
-          </Notice>
+          {!server && (
+            <Notice>
+              <ShieldCheck size={18} />
+              <span>
+                В этой версии пароль не назначается. Настоящий вход и восстановление доступа
+                подключаются на сервере.
+              </span>
+            </Notice>
+          )}
           <div className="form-actions">
             <ActionLink secondary to="/app/users">
               Отмена
@@ -339,7 +364,7 @@ export function Departments() {
 }
 export function DepartmentForm() {
   const { id } = useParams();
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   if (user?.role !== 'admin') return <NotFound forbidden />;
   const department = data.departments.find((d) => d.id === id);
@@ -347,34 +372,47 @@ export function DepartmentForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const ok = await transact((d, a) => {
-      requireCondition(a.role === 'admin', 'Требуется роль администратора.');
-      const name = String(f.get('name')).trim();
-      requireCondition(name.length >= 2, 'Укажите название отдела.');
-      requireCondition(
-        !d.departments.some((x) => x.id !== id && x.name.toLowerCase() === name.toLowerCase()),
-        'Такой отдел уже существует.',
-      );
-      const record = {
-        id: id ?? newId('department'),
-        name,
-        description: String(f.get('description')),
-      };
-      const selected = f.getAll('members').map(String);
-      return {
-        ...d,
-        departments: id
-          ? d.departments.map((x) => (x.id === id ? record : x))
-          : [...d.departments, record],
-        users: d.users.map((u) =>
-          selected.includes(u.id)
-            ? { ...u, departmentId: record.id }
-            : u.departmentId === id
-              ? { ...u, departmentId: '' }
-              : u,
-        ),
-      };
-    }, 'Отдел сохранён.');
+    const ok = await persist(
+      { server, transact },
+      {
+        action: 'department',
+        id,
+        data: {
+          name: String(f.get('name')),
+          description: String(f.get('description')),
+          members: f.getAll('members').map(String),
+        },
+      },
+      (d, a) => {
+        requireCondition(a.role === 'admin', 'Требуется роль администратора.');
+        const name = String(f.get('name')).trim();
+        requireCondition(name.length >= 2, 'Укажите название отдела.');
+        requireCondition(
+          !d.departments.some((x) => x.id !== id && x.name.toLowerCase() === name.toLowerCase()),
+          'Такой отдел уже существует.',
+        );
+        const record = {
+          id: id ?? newId('department'),
+          name,
+          description: String(f.get('description')),
+        };
+        const selected = f.getAll('members').map(String);
+        return {
+          ...d,
+          departments: id
+            ? d.departments.map((x) => (x.id === id ? record : x))
+            : [...d.departments, record],
+          users: d.users.map((u) =>
+            selected.includes(u.id)
+              ? { ...u, departmentId: record.id }
+              : u.departmentId === id
+                ? { ...u, departmentId: '' }
+                : u,
+          ),
+        };
+      },
+      'Отдел сохранён.',
+    );
     if (ok) navigate('/app/departments');
   }
   return (

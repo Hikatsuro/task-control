@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowRight, CalendarDays, FileText, Plus, Search, Users } from 'lucide-react';
-import { useWorkspace } from '../state/workspace-context';
+import { persist, useWorkspace } from '../state/workspace-context';
 import {
   availableProjects,
   canManageProject,
@@ -180,7 +180,7 @@ export function Projects() {
 }
 export function ProjectForm() {
   const { id } = useParams();
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   const project = data.projects.find((p) => p.id === id);
   if (!user) return null;
@@ -189,23 +189,33 @@ export function ProjectForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const ok = await transact(
-      (d, a) =>
-        saveProject(
-          d,
-          a,
-          {
-            name: String(f.get('name')),
-            description: String(f.get('description')),
-            clientId: String(f.get('clientId')),
-            managerId: a.id,
-            memberIds: f.getAll('members').map(String),
-            startDate: String(f.get('startDate')),
-            dueDate: String(f.get('dueDate')),
-            status: (f.get('status') ?? 'active') as Project['status'],
-          },
-          id,
-        ),
+    const input = {
+      name: String(f.get('name')),
+      description: String(f.get('description')),
+      clientId: String(f.get('clientId')),
+      managerId: user?.id ?? '',
+      memberIds: f.getAll('members').map(String),
+      startDate: String(f.get('startDate')),
+      dueDate: String(f.get('dueDate')),
+      status: (f.get('status') ?? 'active') as Project['status'],
+    };
+    const ok = await persist(
+      { server, transact },
+      {
+        action: 'project',
+        id,
+        data: {
+          name: input.name,
+          description: input.description,
+          customer: input.clientId,
+          members: input.memberIds.filter((member) => member !== user?.id),
+          start_date: input.startDate || null,
+          due_date: input.dueDate || null,
+          is_archived: input.status === 'archived',
+          is_completed: input.status === 'completed',
+        },
+      },
+      (d, a) => saveProject(d, a, input, id),
       id ? 'Проект обновлён.' : 'Проект создан.',
     );
     if (ok) navigate(id ? `/app/projects/${id}` : '/app/projects');
@@ -318,7 +328,7 @@ export function ProjectForm() {
 }
 export function ProjectDetail() {
   const { id } = useParams();
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [confirm, setConfirm] = useState(false);
@@ -401,7 +411,7 @@ export function ProjectDetail() {
               <div>
                 <dt>Заказчик</dt>
                 <dd>
-                  {manage ? (
+                  {manage && client ? (
                     <Link to={`/app/clients/${client?.id}`}>{client?.name}</Link>
                   ) : (
                     client?.name
@@ -467,7 +477,13 @@ export function ProjectDetail() {
             : 'Все задачи должны быть приняты. Проект и его история останутся доступны в архиве.'
         }
         onConfirm={() => {
-          void transact(
+          void persist(
+            { server, transact },
+            {
+              action: 'project',
+              id: project.id,
+              data: { is_archived: project.status !== 'archived', is_completed: false },
+            },
             (d, a) =>
               saveProject(
                 d,

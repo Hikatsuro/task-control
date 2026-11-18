@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowUpRight, Building2, Plus, Search } from 'lucide-react';
-import { useWorkspace } from '../state/workspace-context';
+import { persist, useWorkspace } from '../state/workspace-context';
 import { availableProjects } from '../domain/model';
 import { saveClient } from '../domain/commands';
 import {
@@ -98,7 +98,7 @@ export function Clients() {
 }
 export function ClientForm() {
   const { id } = useParams();
-  const { data, user, transact, busy } = useWorkspace();
+  const { data, user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
   const client = data.clients.find((c) => c.id === id);
   if (user?.role !== 'manager') return <NotFound forbidden />;
@@ -106,20 +106,17 @@ export function ClientForm() {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const ok = await transact(
-      (d, a) =>
-        saveClient(
-          d,
-          a,
-          {
-            name: String(f.get('name')),
-            contact: String(f.get('contact')),
-            email: String(f.get('email')),
-            phone: String(f.get('phone')),
-            notes: String(f.get('notes')),
-          },
-          id,
-        ),
+    const input = {
+      name: String(f.get('name')),
+      contact: String(f.get('contact')),
+      email: String(f.get('email')),
+      phone: String(f.get('phone')),
+      notes: String(f.get('notes')),
+    };
+    const ok = await persist(
+      { server, transact },
+      { action: 'customer', id, data: input },
+      (d, a) => saveClient(d, a, input, id),
       'Заказчик сохранён.',
     );
     if (ok) navigate(id ? `/app/clients/${id}` : '/app/clients');
