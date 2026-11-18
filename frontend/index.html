@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru" data-type="software">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f6f0" />
+    <script>
+      // Apply the saved appearance before styles and React can paint a light page.
+      try {
+        const theme = localStorage.getItem('taskcontrol.theme.v1') === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        if (theme === 'dark')
+          document.querySelector('meta[name="theme-color"]').content = '#151813';
+      } catch {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="software" />
+    <meta
+      name="description"
+      content="TaskControl — планирование и контроль задач сотрудников. Локальная демонстрация рабочего пространства команды."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>TaskControl — планирование и контроль задач</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

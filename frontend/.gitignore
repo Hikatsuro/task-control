@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+playwright-report/
+test-results/
+*.local
+*.tsbuildinfo
+
+# Renderpeople samples are kept local; do not redistribute raw models.
+public/models/people-local/*
+!public/models/people-local/README.md
