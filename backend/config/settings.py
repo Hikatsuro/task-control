@@ -19,6 +19,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -65,9 +66,20 @@ USE_TZ = True
 EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_FROM_EMAIL", "taskcontrol@example.test")
 TASKCONTROL_FRONTEND_URL = os.environ.get("TASKCONTROL_FRONTEND_URL", "http://127.0.0.1:5187").rstrip("/")
+CSRF_TRUSTED_ORIGINS = [TASKCONTROL_FRONTEND_URL]
 PASSWORD_RESET_TIMEOUT = 3600
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- Тестовая оплата (PayPal Sandbox, Orders API v2) ---
+# Ключи берутся только из окружения и никогда не попадают во frontend.
+PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID", "")
+PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET", "")
+PAYPAL_API_BASE = os.environ.get("PAYPAL_API_BASE", "https://api-m.sandbox.paypal.com")
+SUBSCRIPTION_PRICE = os.environ.get("TASKCONTROL_PLAN_PRICE", "5.00")
+SUBSCRIPTION_CURRENCY = os.environ.get("TASKCONTROL_PLAN_CURRENCY", "USD")
+SUBSCRIPTION_DAYS = int(os.environ.get("TASKCONTROL_PLAN_DAYS", "30"))
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, UserManager as DjangoUserManager
 from django.db import models
+from django.utils import timezone
 
 
 class Role(models.TextChoices):
@@ -128,3 +129,31 @@ class Notification(models.Model):
 class WorkspaceSettings(models.Model):
     name = models.CharField(max_length=100, default="TaskControl")
     description = models.TextField(blank=True)
+
+
+class PaymentOrder(models.Model):
+    """Заказ PayPal. Тариф активируется только после серверной проверки захвата платежа."""
+
+    class Status(models.TextChoices):
+        CREATED = "created", "Создан"
+        COMPLETED = "completed", "Оплачен"
+        CANCELLED = "cancelled", "Отменён"
+        FAILED = "failed", "Не прошёл проверку"
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="payment_orders")
+    provider_order_id = models.CharField(max_length=64, unique=True)
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.CREATED)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+
+class Subscription(models.Model):
+    """Расширенная аналитика руководителя: доступ до expires_at."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subscription")
+    expires_at = models.DateTimeField()
+
+    @property
+    def is_active(self):
+        return self.expires_at > timezone.now()
