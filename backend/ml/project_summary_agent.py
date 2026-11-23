@@ -4,6 +4,7 @@ from datetime import date
 import sys
 import requests
 from openai import OpenAI
+import sys
 from pathlib import Path
 
 try:
@@ -112,7 +113,7 @@ class ProjectSummaryAgent:
 
 if __name__ == "__main__":
     # Инициализация клиента бэкенда
-    client = backend.ml.api_client.TaskManagerClient(
+    client = TaskManagerClient(
         base_url="http://localhost:8000",
         frontend_url="http://localhost:5173",
     )
