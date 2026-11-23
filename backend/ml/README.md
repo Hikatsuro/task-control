@@ -6,12 +6,16 @@
 
 1. Перейдите в папку `backend`, создайте и активируйте виртуальное окружение:
 
-   cd backend
-   python -m venv .venv
-   # Для Windows (CMD):
-   .venv\Scripts\activate
-   # Для Linux/macOS:
-   source .venv/bin/activate
+         cd backend
+         python -m venv .venv
+
+# Для Windows (CMD):
+   
+      .venv\Scripts\activate
+   
+# Для Linux/macOS:
+
+      source .venv/bin/activate
 
 Установите зависимости проекта (использование python -m pip исключает ошибки, если папка Scripts не добавлена в PATH на Windows):
 
