@@ -5,12 +5,7 @@ import sys
 import requests
 from openai import OpenAI
 from pathlib import Path
-
-try:
-    from ml.api_client import format_project_tasks, TaskManagerClient
-except ImportError:
-    sys.path.append(str(Path(__file__).resolve().parent))
-    from api_client import format_project_tasks, TaskManagerClient
+from api_client import format_project_tasks, TaskManagerClient
 
 class ProjectSummaryAgent:
     def __init__(self, task_client: backend.ml.api_client.TaskManagerClient, model: str = "gemma4:31b"):
