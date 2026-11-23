@@ -3,7 +3,10 @@ import os
 from datetime import date
 import requests
 from openai import OpenAI
-from api_client import format_project_tasks, TaskManagerClient
+try:
+    from ml.api_client import format_project_tasks, TaskManagerClient
+except ImportError:
+    from api_client import format_project_tasks, TaskManagerClient
 
 class ProjectSummaryAgent:
     def __init__(self, task_client: TaskManagerClient, model: str = "gemma4:31b"):
