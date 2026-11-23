@@ -6,10 +6,10 @@ from openai import OpenAI
 try:
     from ml.api_client import format_project_tasks, TaskManagerClient
 except ImportError:
-    from backend.ml.api_client import format_project_tasks, TaskManagerClient
+    import backend.ml.api_client
 
 class ProjectSummaryAgent:
-    def __init__(self, task_client: TaskManagerClient, model: str = "gemma4:31b"):
+    def __init__(self, task_client: backend.ml.api_client.TaskManagerClient, model: str = "gemma4:31b"):
         self.task_client = task_client
         self.model = model
         self.llm = OpenAI(
@@ -108,7 +108,7 @@ class ProjectSummaryAgent:
 
 if __name__ == "__main__":
     # Инициализация клиента бэкенда
-    client = TaskManagerClient(
+    client = backend.ml.api_client.TaskManagerClient(
         base_url="http://localhost:8000",
         frontend_url="http://localhost:5173",
     )
