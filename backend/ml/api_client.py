@@ -38,14 +38,16 @@ class TaskManagerClient:
         return response.json()
 
     def get_project_tasks(self, project_id: int):
-        """
-        Получает задачи конкретного проекта и собирает необходимые поля:
-        название, исполнителя, статус, срок и ссылку на карточку для AI-сводки.
-        """
-        url = f"{self.base_url}/api/tasks/"
-        params = {"project_id": project_id}
-        
-        response = self.session.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        
-        return format_project_tasks(response.json(), self.frontend_url)
+            """Получает задачи конкретного проекта с проверкой доступа к самому проекту."""
+            # 1. Проверяем доступ к проекту: если проект чужой или не существует, сервер вернёт 404
+            project_url = f"{self.base_url}/api/projects/{project_id}/"
+            project_response = self.session.get(project_url, timeout=10)
+            project_response.raise_for_status()
+    
+            # 2. Если доступ к проекту есть — получаем его задачи
+            tasks_url = f"{self.base_url}/api/tasks/"
+            response = self.session.get(tasks_url, params={"project_id": project_id}, timeout=10)
+            response.raise_for_status()
+            
+            return format_project_tasks(response.json(), self.frontend_url)
+    
