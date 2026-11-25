@@ -4,6 +4,42 @@
 
 Сайт открывается по одному адресу — `http://127.0.0.1:8080`: и при запуске на компьютере (Vite пересылает `/api` в Django), и в Docker (nginx пересылает `/api` в Django).
 
+## Если вы только скачали проект
+
+В репозитории нет папок с установленными пакетами и личных файлов. Так задумано: они большие, зависят от системы или содержат ключи, поэтому каждый участник создаёт их у себя.
+
+| Чего нет после `git clone` | Что это | Как появится |
+| --- | --- | --- |
+| `frontend/node_modules/` | пакеты фронтенда: React, Vite, TypeScript, тесты (около 13 тысяч файлов, 200+ МБ) | `npm ci` в `frontend/` |
+| `backend/.venv/` | Python-пакеты: Django, DRF, `requests` | `python -m venv .venv` и `pip install -r requirements.txt` в `backend/` |
+| `backend/.env` | адрес сайта, ключи PayPal Sandbox, модель AI | скопировать из `backend/.env.example` |
+| `backend/db.sqlite3` | локальная база | `manage.py migrate` и заполнение демоданными |
+
+`npm ci` ставит пакеты строго по версиям из `package-lock.json`, поэтому у всех участников одинаковый набор. Программы вроде `esbuild` при этом скачиваются под вашу систему: Windows, macOS или Linux.
+
+1. Поставьте один раз [Node.js](https://nodejs.org/) 22.12+ или 24 LTS и [Python](https://www.python.org/downloads/) 3.12. После установки откройте новое окно PowerShell.
+2. Скачайте проект и перейдите в его папку.
+
+   ```powershell
+   git clone --branch dev https://github.com/Hikatsuro/task-control.git
+   Set-Location task-control
+   ```
+
+3. Выполните команды из раздела «Запуск на компьютере» ниже. Они создадут `.venv`, `.env`, базу и `node_modules`. Это нужно сделать один раз.
+
+При следующих запусках достаточно `runserver` в `backend/` и `npm run dev` в `frontend/`.
+
+Если что-то не запускается:
+
+- `npm` или `python` не найден — установите Node.js или Python и откройте новое окно PowerShell.
+- `npm ci` пишет про версию Node — обновите Node.js до 22.12+ или 24 LTS.
+- После `git pull` изменился `frontend/package.json` или `backend/requirements.txt` — снова выполните `npm ci` или `pip install -r requirements.txt`.
+- После `git pull` появились новые миграции — выполните `manage.py migrate`.
+- Пакеты повреждены или ставились вперемешку — удалите `frontend/node_modules` и повторите `npm ci`.
+- Не пишите ключи в `.env.example` и не добавляйте `.env` в Git: ключи PayPal у каждого свои.
+
+Через Docker ставить пакеты вручную не нужно: `docker compose up --build` выполняет `npm ci` и `pip install` внутри контейнеров.
+
 ## Запуск на компьютере
 
 Понадобятся Python 3.12 и Node.js 22.12+ или 24 LTS. Откройте два терминала из корня проекта. Команды ниже для PowerShell.
