@@ -1,0 +1,328 @@
+.rb-page {
+  --rb-bg: #eceee6;
+  --rb-bg-high: #f7f8f3;
+  --rb-ink: #20231f;
+  --rb-muted: #555d50;
+  --rb-accent: #b8461f;
+  --rb-button: #f45c28;
+  --rb-button-hover: #f6774a;
+  --rb-on-button: #20231f;
+  --rb-board: #fbfbf7;
+  --rb-board-edge: #dfe3d6;
+  --rb-column: #eef0e7;
+  --rb-shadow: #3a3a2c;
+  --rb-light: #fffdf2;
+  --rb-dust: #8d9386;
+  --rb-edge: clamp(20px, 3.5vw, 84px);
+  --rb-display: 'Roboto Condensed Variable', 'Roboto Condensed', sans-serif;
+  color-scheme: light;
+  background: var(--rb-bg);
+  color: var(--rb-ink);
+  font-family: 'Roboto Variable', Roboto, sans-serif;
+}
+html[data-theme='dark'] .rb-page {
+  --rb-bg: #151813;
+  --rb-bg-high: #20251d;
+  --rb-ink: #eef1e8;
+  --rb-muted: #b3bcaa;
+  --rb-accent: #f28c64;
+  --rb-button: #f28c64;
+  --rb-button-hover: #f5a17d;
+  --rb-board: #22271f;
+  --rb-board-edge: #3a4334;
+  --rb-column: #1b1f19;
+  --rb-shadow: #000;
+  --rb-light: #3a3a2a;
+  --rb-dust: #6f7768;
+  color-scheme: dark;
+}
+.rb-page ::selection {
+  background: #f7bd99;
+  color: #20231f;
+}
+.rb-page :focus-visible {
+  outline: 3px solid var(--rb-accent);
+  outline-offset: 3px;
+}
+.rb-track {
+  height: 340svh;
+}
+.rb-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 560px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: clip;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 46%, var(--rb-bg-high), transparent 72%), var(--rb-bg);
+}
+.rb-page[data-static='true'] .rb-pin {
+  position: relative;
+}
+.rb-pin .landing-header {
+  background: transparent;
+  padding-inline: var(--rb-edge);
+}
+.rb-pin .landing-header .brand {
+  color: var(--rb-ink);
+}
+
+/* Living gradient behind everything. It quiets down as the board arrives, so the
+   second message sits on a calm surface. */
+.rb-gradient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: calc(1 - var(--board, 0) * 0.55);
+}
+
+/* Stage: one 3D world for the ribbon, the board and the cards. */
+.rb-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  perspective: 1300px;
+  perspective-origin: 50% 34%;
+  pointer-events: none;
+}
+.rb-world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+.rb-board {
+  position: absolute;
+  left: -480px;
+  top: -300px;
+  border-radius: 22px;
+  background: var(--rb-board);
+  border: 1px solid var(--rb-board-edge);
+  box-shadow:
+    0 70px 90px -50px color-mix(in srgb, var(--rb-shadow) 55%, transparent),
+    0 6px 14px color-mix(in srgb, var(--rb-shadow) 10%, transparent);
+  opacity: 0;
+  outline: 1px solid transparent;
+}
+.rb-board-inner {
+  position: relative;
+  height: 100%;
+  color: var(--rb-ink);
+}
+.rb-board-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 28px 56px 0;
+}
+.rb-board-bar span {
+  display: block;
+  color: var(--rb-muted);
+  font-size: 15px;
+}
+.rb-board-bar b {
+  display: block;
+  margin-top: 6px;
+  font: 760 40px/1 var(--rb-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.rb-board-bar .rb-members {
+  display: flex;
+  padding-left: 8px;
+}
+.rb-members i {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-left: -8px;
+  border: 3px solid var(--rb-board);
+  border-radius: 50%;
+  background: #2b3027;
+  color: #f5f6f0;
+  font: 700 14px/1 inherit;
+  font-style: normal;
+}
+.rb-members i:nth-child(2) {
+  background: #f45c28;
+  color: #20231f;
+}
+.rb-members i:nth-child(3) {
+  background: #5e6a4c;
+}
+.rb-column {
+  position: absolute;
+  top: 108px;
+  bottom: 24px;
+  left: calc(56px + var(--column) * 216px);
+  width: 200px;
+  border-radius: 14px;
+  background: var(--rb-column);
+}
+.rb-column-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.rb-column-title i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #a7b398;
+}
+.rb-column-title[data-status='1'] i {
+  background: #4f86b0;
+}
+.rb-column-title[data-status='2'] i {
+  background: #d39a3c;
+}
+.rb-column-title[data-status='3'] i {
+  background: #5f9a63;
+}
+.rb-column-title small {
+  margin-left: auto;
+  color: var(--rb-muted);
+  font-size: 14px;
+}
+
+/* Cards: ribbon slices on the first screen, task cards on the board. */
+
+/* Copy layers over the stage. */
+.rb-frame {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+}
+.rb-accent {
+  color: var(--rb-accent);
+}
+.rb-outro {
+  position: absolute;
+  left: var(--rb-edge);
+  top: 50%;
+  width: min(38%, 560px);
+  translate: 0 -50%;
+  opacity: var(--outro, 0);
+  transform: translateY(calc((1 - var(--outro, 0)) * 26px));
+}
+.rb-outro h2 {
+  margin: 0;
+  font: 800 clamp(34px, min(3.5vw, 7svh), 66px)/0.95 var(--rb-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.rb-outro p {
+  margin: clamp(16px, 2.6vh, 28px) 0 clamp(20px, 3vh, 30px);
+  max-width: 40ch;
+  color: var(--rb-muted);
+  font-size: clamp(15px, 1.1vw, 18px);
+  line-height: 1.55;
+}
+.rb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 22px;
+}
+.rb-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 50px;
+  padding: 0 22px;
+  border-radius: 6px;
+  background: var(--rb-button);
+  color: var(--rb-on-button);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 14px 26px -16px color-mix(in srgb, var(--rb-button) 90%, transparent);
+  transition:
+    background 0.18s,
+    translate 0.18s var(--ease, ease-out);
+}
+.rb-cta:hover {
+  background: var(--rb-button-hover);
+}
+.rb-cta:active {
+  translate: 0 1px;
+}
+.rb-cta svg {
+  transition: transform 0.18s;
+}
+.rb-cta:hover svg {
+  transform: translateX(3px);
+}
+.rb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  color: var(--rb-muted);
+  font-size: 15px;
+  font-weight: 650;
+}
+.rb-link:hover {
+  color: var(--rb-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.rb-cue {
+  position: absolute;
+  left: var(--rb-edge);
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--rb-muted);
+  font-size: 13px;
+  opacity: calc(1 - var(--outro, 0));
+}
+
+@media (max-width: 1100px) and (min-width: 701px) {
+  .rb-outro {
+    width: 44%;
+  }
+}
+@media (max-width: 700px) {
+  .rb-outro {
+    top: clamp(8px, 2.4vh, 28px);
+    left: var(--rb-edge);
+    right: var(--rb-edge);
+    width: auto;
+    translate: none;
+  }
+  .rb-outro h2 {
+    font-size: clamp(30px, 8.6vw, 42px);
+  }
+  .rb-outro p {
+    margin: 10px 0 14px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .rb-cue {
+    left: 50%;
+    translate: -50% 0;
+    bottom: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-cta,
+  .rb-cta svg {
+    transition: none;
+  }
+}

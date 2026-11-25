@@ -1,0 +1,311 @@
+/* Reports page. */
+
+.report-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 20px;
+  padding: 22px;
+  background: var(--surface-hover, #ecefe4);
+  border-radius: 6px;
+}
+.report-filters > .field {
+  margin: 0;
+}
+.report-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.report-print-heading {
+  display: none;
+}
+.status-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 6px 0;
+}
+.status-chart > div {
+  display: grid;
+  grid-template-columns: 110px 1fr 22px;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.status-chart strong {
+  font-weight: 550;
+  text-align: right;
+}
+.chart-track {
+  height: 9px;
+  background: var(--track, #f0f2eb);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.chart-bar {
+  display: block;
+  background: var(--orange);
+  height: 100%;
+  border-radius: 2px;
+  min-width: 0;
+}
+.chart-new {
+  background: var(--chart-new, #a7b398);
+}
+.chart-in_progress {
+  background: var(--chart-progress, #668daa);
+}
+.chart-in_review {
+  background: var(--chart-review, #d4a65a);
+}
+.chart-done {
+  background: var(--chart-done, #709774);
+}
+
+/* ==========================================================================
+   Report charts. Three states in one palette checked for colour-blind
+   separation and contrast in both themes: done, in work, overdue.
+   ========================================================================== */
+html[data-theme='dark'] {
+  --rep-done: #3f9e5c;
+  --rep-open: #4f86d6;
+  --rep-overdue: #d85a3e;
+}
+[data-part='done'] {
+  background: var(--rep-done);
+}
+[data-part='open'] {
+  background: var(--rep-open);
+}
+[data-part='overdue'] {
+  background: var(--rep-overdue);
+}
+.rep-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+.rep-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rep-legend i,
+.rep-tip i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.rep-note {
+  margin: -6px 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.rep-figure {
+  margin: 0;
+}
+.rep-columns {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--count), minmax(0, 1fr));
+  gap: 14px;
+  height: 230px;
+  padding: 0 0 28px 30px;
+}
+.rep-grid {
+  position: absolute;
+  inset: 0 0 28px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.rep-grid span {
+  position: relative;
+  height: 0;
+  border-top: 1px solid var(--separator, #e7e9df);
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 0;
+}
+.rep-grid span:last-child {
+  border-top-color: var(--line);
+}
+.rep-column {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  outline: none;
+}
+.rep-column::before {
+  content: '';
+  position: absolute;
+  inset: -6px -6px -24px;
+  z-index: -1;
+  border-radius: 8px;
+  background: var(--surface-tint, #f0f2e9);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.rep-column:hover::before,
+.rep-column:focus-visible::before {
+  opacity: 1;
+}
+.rep-column:focus-visible {
+  box-shadow: 0 0 0 2px var(--orange-dark);
+  border-radius: 6px;
+}
+.rep-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  width: min(60%, 46px);
+  margin: 0 auto;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+  transform-origin: bottom;
+  animation: rep-grow-y 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms + 80ms);
+}
+.rep-stack span {
+  min-height: 3px;
+}
+.rep-tick {
+  position: absolute;
+  left: 50%;
+  bottom: -22px;
+  translate: -50% 0;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.rep-tip {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 14px 30px -18px #2a2d2480;
+  color: var(--ink);
+  font-size: 12px;
+  translate: -50% calc(-100% - 6px);
+  pointer-events: none;
+}
+.rep-tip > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rep-tip strong {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.rep-column:hover .rep-tip,
+.rep-column:focus-visible .rep-tip {
+  display: flex;
+}
+
+.rep-people {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 6px 0;
+}
+.rep-person {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1fr) 24px;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.rep-person > a {
+  overflow-wrap: anywhere;
+}
+.rep-bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  min-width: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  transform-origin: left;
+  animation: rep-grow-x 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms + 120ms);
+}
+.rep-person strong {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rep-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.rep-mini > span {
+  width: 96px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--track, #f0f2eb);
+  overflow: hidden;
+}
+.rep-mini i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--rep-done);
+}
+@media (max-width: 600px) {
+  .rep-columns {
+    gap: 6px;
+    padding-left: 24px;
+  }
+  /* Every other week label, so dates never collide on a phone. */
+  .rep-columns > .rep-column:nth-child(odd) .rep-tick {
+    visibility: hidden;
+  }
+  .rep-tip {
+    min-width: 150px;
+  }
+}
+@media print {
+  .rep-tip {
+    display: none !important;
+  }
+}
+
+/* Member page: weekly deadlines next to the split by project. */
+.member-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+/* In the narrow side panel the legend drops under the title instead of squeezing it. */
+.member-charts > .panel:last-child .panel-heading {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+@media (max-width: 1100px) {
+  .member-charts {
+    grid-template-columns: 1fr;
+  }
+}

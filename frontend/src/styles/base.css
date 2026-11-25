@@ -1,0 +1,219 @@
+/* Theme tokens, reset, typography and small utilities. */
+
+:root {
+  font-family: 'Roboto Variable', Roboto, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --canvas: #f5f6f0;
+  --sidebar: #eef0e7;
+  --surface: #fff;
+  --ink: #20231f;
+  --muted: #555d50;
+  --line: #d9ded1;
+  --orange: #f45c28;
+  --orange-dark: #a23c18;
+  --pale: #fdece3;
+  --on-accent: #20231f;
+  --strong: #20231f;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --rep-done: #2f8a4c;
+  --rep-open: #3b6fb6;
+  --rep-overdue: #c8432b;
+}
+
+/* Theme roles keep component states consistent without inverting the light design. */
+@media screen {
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --canvas: #151813;
+    --sidebar: #1b1f19;
+    --surface: #22271f;
+    --ink: #eef1e8;
+    --muted: #acb5a4;
+    --line: #414b39;
+    --separator: var(--line);
+    --subtle-text: var(--muted);
+    --orange: #f28c64;
+    --orange-dark: #f4a585;
+    --pale: #3c2c22;
+    --strong: #30392b;
+    --surface-muted: #1b1f19;
+    --surface-tint: #292f25;
+    --surface-hover: #30382a;
+    --surface-selected: #333e2c;
+    --surface-raised: #2a3026;
+    --control-border: #738369;
+    --hover-border: #88967c;
+    --placeholder: #a1ac98;
+    --icon-muted: #a2b397;
+    --selection: #70452f;
+    --selection-text: #fff1e8;
+    --focus-wash: #f28c6424;
+    --accent-hover: #f5a17d;
+    --strong-hover: #414d39;
+    --danger-action: #ae3d35;
+    --danger-action-hover: #94332c;
+    --neutral-bg: #2d3528;
+    --neutral-text: #c3ccb9;
+    --info-bg: #233543;
+    --info-text: #a5c9e6;
+    --warning-bg: #3d3021;
+    --warning-text: #f1c18e;
+    --success-bg: #25382a;
+    --success-text: #aad2ae;
+    --danger-bg: #442c27;
+    --danger-text: #f2b0a2;
+    --priority-low: #a5b79a;
+    --priority-medium: #d5ad68;
+    --priority-high: #e6957f;
+    --track: #3b4533;
+    --unread: #2b3324;
+    --switch-track: #495641;
+    --switch-border: #7f8e73;
+    --switch-thumb: #eef1e8;
+    --chart-new: #a7b398;
+    --chart-progress: #83b0d1;
+    --chart-review: #dbb574;
+    --chart-done: #92b596;
+    --rail: #617452;
+    --overlay: #080b07b8;
+    --shadow-soft: #00000018;
+    --shadow-drag: #00000060;
+    --shadow-modal: #00000080;
+    --shadow-toast: #00000050;
+    --skeleton-low: #262d21;
+  }
+
+  :root[data-theme='dark'] .sidebar-nav > a img {
+    filter: brightness(0) invert(1);
+  }
+
+  :root[data-theme='dark'] input[type='checkbox'],
+  :root[data-theme='dark'] input[type='radio'] {
+    accent-color: var(--orange);
+  }
+
+  :root[data-theme='dark'] .switch:checked:before {
+    background: var(--on-accent);
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+button {
+  cursor: pointer;
+  color: inherit;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+p {
+  line-height: 1.6;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+}
+h1 {
+  font-family: 'Roboto Condensed Variable', 'Arial Narrow', sans-serif;
+  letter-spacing: -0.03em;
+}
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+::selection {
+  background: var(--selection, #f9c5af);
+  color: var(--selection-text, var(--ink));
+}
+:focus-visible {
+  outline: 2px solid var(--orange-dark);
+  outline-offset: 3px;
+}
+input,
+textarea {
+  caret-color: var(--orange-dark);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  z-index: 1000;
+  background: var(--strong);
+  color: white;
+  padding: 12px 20px;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+.muted {
+  color: var(--muted);
+}
+.accent {
+  color: var(--orange-dark);
+}
+.preserve-lines {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.prose {
+  max-width: 72ch;
+}
+.full-width {
+  width: 100%;
+}
+.mobile-only {
+  display: none !important;
+}

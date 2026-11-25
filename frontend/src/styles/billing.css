@@ -1,0 +1,128 @@
+/* Demo module: plans and payment. */
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1050px;
+  align-items: stretch;
+}
+.pricing-grid > .panel {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.pricing-grid > .panel .badge {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.pricing-grid .panel-heading {
+  margin-bottom: 0;
+}
+.plan-price {
+  font-family: 'Roboto Condensed Variable', sans-serif;
+  font-size: 50px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.plan-price > span {
+  font-family: 'Roboto Variable', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.pro-plan {
+  padding: 32px;
+  background: var(--strong);
+  color: #f5f6ef;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pro-plan h2 {
+  font-size: 26px;
+  margin: 0;
+}
+.pro-plan .plan-price {
+  color: var(--orange);
+}
+.pro-plan .plan-price > span {
+  color: #bfc5b6;
+}
+.pro-plan > p {
+  color: #c7cebf;
+  margin: 0;
+  font-size: 14px;
+}
+.pro-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c7cebf;
+  font-size: 12px;
+}
+.pro-plan .check-line > svg {
+  color: #f7946d;
+}
+.pro-plan > .button {
+  margin-top: 12px;
+}
+.pro-plan > small {
+  font-size: 11px;
+  color: #c7cebf;
+}
+.check-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.check-line > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--orange-dark);
+}
+.checkout-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.checkout-actions > .text-link {
+  margin-top: 8px;
+}
+.payment-result {
+  max-width: 800px;
+  align-self: center;
+  margin: 32px 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  width: 100%;
+}
+.payment-result > h2 {
+  font-size: 30px;
+  margin: 24px 0 14px;
+}
+.payment-result > p {
+  max-width: 58ch;
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+.payment-success > svg {
+  color: var(--success-text, #527d48);
+}
+.payment-error > svg {
+  color: var(--danger-text, #a24737);
+}
+.payment-pending > svg {
+  color: var(--warning-text, #ac7a2b);
+}

@@ -4,10 +4,7 @@ import { MotionConfig } from 'motion/react';
 import { AppShell, StorageRecovery, Toasts } from './components/AppShell';
 import { NotFound } from './components/ui';
 import { useWorkspace } from './state/workspace-context';
-const Landing = lazy(() => import('./pages/Landing').then((m) => ({ default: m.Landing })));
-const CinematicLanding = lazy(() =>
-  import('./pages/CinematicLanding').then((m) => ({ default: m.CinematicLanding })),
-);
+const Landing = lazy(() => import('./pages/landing/Landing').then((m) => ({ default: m.Landing })));
 const Auth = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Auth })));
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
 const Projects = lazy(() => import('./pages/Projects').then((m) => ({ default: m.Projects })));
@@ -69,7 +66,6 @@ export function App() {
     window.scrollTo(0, 0);
     const titles: Record<string, string> = {
       '/': 'TaskControl — планирование и контроль задач',
-      '/cinematic': 'История одного документа — TaskControl',
       '/login': 'Вход — TaskControl',
       '/forgot-password': 'Восстановление доступа — TaskControl',
       '/reset-password': 'Новый пароль — TaskControl',
@@ -102,8 +98,6 @@ export function App() {
       >
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/workflow" element={<Landing legacyWorkflow />} />
-          <Route path="/cinematic" element={<CinematicLanding />} />
           <Route path="/login" element={<Auth key="login" />} />
           <Route path="/server" element={<Navigate to="/app/projects" replace />} />
           <Route path="/forgot-password" element={<Auth key="forgot" mode="forgot" />} />

@@ -1,0 +1,239 @@
+/* Version 3 of the first screen: task cards scatter, line up, form a circle, open into
+   an arch and land on the project board. Shares the stage, board and copy styles with
+   ribbon.css. */
+.mh-track {
+  height: 420svh;
+}
+.mh-deck {
+  z-index: 1;
+}
+.mh-slot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  /* No will-change: it would freeze each card into one bitmap at its first size and
+     stretch it later, which blurs the text on the arch. */
+  transform-style: preserve-3d;
+}
+
+/* Cards: drawn at twice their board size and only scaled down, so text stays sharp. */
+.mh-card {
+  position: absolute;
+  left: -190px;
+  top: -150px;
+  /* The flip takes its depth from the stage's perspective; a perspective of its own
+     here would magnify the card once the board tilts it. */
+  transform-style: preserve-3d;
+  pointer-events: auto;
+}
+.mh-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mh-card:hover .mh-flip {
+  transform: rotateY(180deg);
+}
+.mh-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 30px 28px;
+  border-radius: 24px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  outline: 1px solid transparent;
+  box-shadow: 0 24px 40px -26px #2b2a1f88;
+}
+.mh-front {
+  color: var(--text);
+  background: linear-gradient(
+    158deg,
+    color-mix(in oklab, var(--fill), white 26%) 0%,
+    var(--fill) 42%,
+    color-mix(in oklab, var(--fill), black 14%) 100%
+  );
+  box-shadow:
+    inset 0 0 0 2px color-mix(in oklab, var(--fill), white 30%),
+    0 24px 40px -26px #2b2a1f88;
+}
+.mh-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 24px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.mh-code i,
+.mh-status i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #a7b398;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--text) 18%, transparent);
+}
+[data-status='1'] > i,
+.mh-code i[data-status='1'] {
+  background: #4f86b0;
+}
+[data-status='2'] > i,
+.mh-code i[data-status='2'] {
+  background: #d39a3c;
+}
+[data-status='3'] > i,
+.mh-code i[data-status='3'] {
+  background: #5f9a63;
+}
+.mh-front strong {
+  margin-top: 12px;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.mh-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+  font-size: 26px;
+  font-weight: 600;
+}
+.mh-meta i {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--text) 16%, transparent);
+  font-size: 24px;
+  font-style: normal;
+}
+.mh-back {
+  transform: rotateY(180deg);
+  background: #2b3027;
+  color: #f5f6f0;
+  box-shadow:
+    inset 0 0 0 2px #414b39,
+    0 24px 40px -26px #2b2a1f88;
+}
+.mh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: 650;
+}
+.mh-back dl {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 0;
+}
+.mh-back dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 24px;
+}
+.mh-back dt {
+  color: #b3bcaa;
+}
+.mh-back dd {
+  margin: 0;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mh-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  color: #f7b596;
+  font-size: 26px;
+  font-weight: 650;
+}
+
+/* Copy: the headline sits inside the circle, the second message above the arch. */
+.mh-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(560px, 80vw);
+  text-align: center;
+  pointer-events: none;
+  opacity: var(--intro, 0);
+  filter: blur(calc((1 - var(--intro, 0)) * 8px));
+}
+.mh-center h1 {
+  margin: 0;
+  font: 820 clamp(40px, min(4.4vw, 8svh), 84px)/0.92 var(--rb-display);
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.mh-center p {
+  margin: 18px 0 0;
+  color: var(--rb-muted);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mh-arc-copy {
+  position: absolute;
+  left: 50%;
+  top: clamp(8px, 4vh, 48px);
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(640px, calc(100% - 2 * var(--rb-edge)));
+  text-align: center;
+  opacity: var(--arc, 0);
+  transform: translateY(calc((1 - var(--arc, 0)) * 20px));
+}
+.mh-arc-copy h2 {
+  margin: 0;
+  font: 800 clamp(34px, min(3.8vw, 7svh), 68px)/0.95 var(--rb-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.mh-arc-copy p {
+  margin: 14px 0 22px;
+  max-width: 46ch;
+  color: var(--rb-muted);
+  font-size: clamp(15px, 1.1vw, 18px);
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .mh-track {
+    height: 380svh;
+  }
+  .mh-arc-copy p {
+    font-size: 14px;
+    margin: 10px 0 16px;
+  }
+}
+@media (hover: none) {
+  .mh-card:hover .mh-flip {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mh-flip {
+    transition: none;
+  }
+  .mh-center {
+    filter: none;
+  }
+}

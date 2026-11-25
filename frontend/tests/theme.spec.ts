@@ -25,9 +25,10 @@ test('тема сохраняется, действует на всех марш
   const otherTab = await context.newPage();
   await otherTab.goto('/');
   await expect(otherTab.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(otherTab.locator('.landing-header')).toHaveCSS(
+  // The header sits transparently over the first screen; the screen itself carries the theme.
+  await expect(otherTab.locator('.rb-page').first()).toHaveCSS(
     'background-color',
-    'rgb(34, 39, 31)',
+    'rgb(21, 24, 19)',
   );
   await otherTab.goto('/login');
   await expect(otherTab.locator('.auth-page')).toHaveCSS('background-color', 'rgb(34, 39, 31)');

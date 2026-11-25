@@ -7,7 +7,8 @@ export default defineConfig({
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    // Its own port: the site on 8080 (Django mode) and the root frontend on 5173 keep running.
+    baseURL: 'http://127.0.0.1:5188',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -22,8 +23,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- --port 5188',
     env: { VITE_DEMO_MODE: 'true' },
-    url: 'http://127.0.0.1:5173',
+    url: 'http://127.0.0.1:5188',
   },
 });

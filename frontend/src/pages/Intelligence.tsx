@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bot, Info, Send, Sparkles } from 'lucide-react';
+import { ArrowRight, Bot, Info, Send } from 'lucide-react';
 import { useWorkspace } from '../state/workspace-context';
 import {
   availableProjects,
@@ -11,6 +11,7 @@ import {
   statusLabels,
 } from '../domain/model';
 import type { Task } from '../domain/model';
+import { ServerAssistant } from './AssistantServer';
 import {
   Button,
   Empty,
@@ -26,11 +27,13 @@ import {
 
 type Message = { id: number; role: 'user' | 'assistant'; text: string; taskIds: string[] };
 export function Assistant() {
-  const { data, user } = useWorkspace();
+  const { data, user, server } = useWorkspace();
   const [project, setProject] = useState('');
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  // With Django the summary comes from the local model; the browser demo keeps its rules.
+  if (server) return <ServerAssistant />;
   if (!user) return null;
   const projects = availableProjects(data, user);
   const tasks = availableTasks(data, user).filter((t) => !project || t.projectId === project);
@@ -57,10 +60,7 @@ export function Assistant() {
   }
   return (
     <Screen>
-      <PageHeading
-        title="AI-помощник"
-        description="Контекст задач и короткие сводки по проектам."
-      />
+      <PageHeading title="AI-помощник" />
       <Notice>
         <Info size={18} />
         <span>
@@ -110,11 +110,8 @@ export function Assistant() {
               ))
             ) : (
               <div className="chat-welcome">
-                <span className="assistant-symbol">
-                  <Sparkles size={29} />
-                </span>
-                <h2>Начнём с проекта</h2>
-                <p>Покажу текущие задачи, сроки и результаты, которые ожидают проверки.</p>
+                <h2>Спросите о задачах проекта</h2>
+                <p>Сводка собирается по правилам из задач выбранного проекта.</p>
                 <div className="prompt-examples">
                   {['Сводка по задачам', 'Какие задачи просрочены?', 'Что ожидает проверки?'].map(
                     (text) => (
@@ -221,13 +218,13 @@ export function Forecast() {
         приоритету и статусу. Это не вероятность просрочки и не результат обученной модели.
       </Notice>
       <div className="stats-row">
-        <Stat value={tasks.length} label="Открытых задач" />
+        <Stat value={tasks.length} label="открытых задач" />
         <Stat
           value={tasks.filter((t) => demoRisk(t) >= 60).length}
-          label="Высокий индекс риска"
+          label="с высоким индексом риска"
           accent
         />
-        <Stat value={tasks.filter((t) => isOverdue(t)).length} label="Уже просрочено" />
+        <Stat value={tasks.filter((t) => isOverdue(t)).length} label="уже просрочено" />
       </div>
       <label className="field forecast-filter">
         <span>Проект</span>

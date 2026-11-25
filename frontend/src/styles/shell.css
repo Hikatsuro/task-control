@@ -1,0 +1,421 @@
+/* Cabinet frame: sidebar, header, page heading, figures, panels, notices, empty states. */
+
+.app-shell {
+  display: flex;
+  min-height: 100svh;
+  font-size: 14px;
+}
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 264px;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow-y: auto;
+  z-index: 40;
+  border-right: 1px solid var(--separator, #e7e9df);
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sidebar-nav > a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  min-height: 44px;
+  border-radius: 4px;
+  font-weight: 550;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.sidebar-nav > a img {
+  flex-shrink: 0;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.8;
+}
+.sidebar-nav > a.active {
+  background: var(--strong);
+  color: #fff;
+}
+.sidebar-nav > a.active img {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+.sidebar-nav > a:hover:not(.active) {
+  background: var(--surface-hover, #e2e6da);
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 32px;
+}
+.sidebar-profile {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.sidebar-profile > div {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+.sidebar-profile strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 550;
+}
+.sidebar-profile > div > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.sidebar-bottom-links {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.sidebar-bottom-links > a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.workspace-main {
+  margin-left: 264px;
+  width: calc(100% - 264px);
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  min-width: 0;
+}
+.app-header {
+  height: 64px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  flex-shrink: 0;
+}
+.breadcrumb {
+  color: var(--ink);
+  font-size: 15px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.breadcrumb > span {
+  margin: 0 7px;
+  color: var(--icon-muted, #9b9f92);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.header-date {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.notification-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 9px;
+  background: var(--sidebar);
+  border-radius: 4px;
+}
+.notification-link > span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.demo-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--icon-muted, #6a7c4f);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.app-content {
+  padding: 28px 40px 64px;
+  flex: 1;
+  min-width: 0;
+  outline: none;
+}
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.page-heading {
+  margin-bottom: 2px;
+}
+.page-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.page-heading h1 {
+  font-size: clamp(28px, 2.3vw, 36px);
+  line-height: 1.1;
+  text-transform: none;
+  margin: 0 0 6px;
+  font-weight: 720;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.015em;
+}
+.page-heading p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+  max-width: 65ch;
+}
+.stats-row {
+  display: flex;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 0;
+  padding: 0 24px;
+  background: none;
+  border-radius: 0;
+  min-width: 0;
+}
+.stat > strong {
+  font-family: 'Roboto Condensed Variable', sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.stat > span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.stat > svg {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--icon-muted, #8c9285);
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 0;
+}
+.panel p:last-child {
+  margin-bottom: 0;
+}
+.panel > h2 {
+  margin-bottom: 18px;
+}
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.panel-heading h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.panel-heading > .text-link {
+  white-space: nowrap;
+}
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--neutral-bg, #ecefe5);
+  color: var(--neutral-text, #485141);
+  font-size: 13px;
+  line-height: 1.6;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+.notice > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.notice p {
+  margin: 4px 0 10px;
+}
+.notice .button {
+  margin-top: 12px;
+}
+.notice-warning {
+  background: var(--warning-bg, #fbf0df);
+  color: var(--warning-text, #80501b);
+}
+.notice-success {
+  background: var(--success-bg, #e8f1e7);
+  color: var(--success-text, #2d6239);
+}
+.panel > .notice {
+  margin: 18px 0;
+}
+.panel > .notice:last-child {
+  margin-bottom: 0;
+}
+.empty {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 52px 24px;
+  color: var(--muted);
+  min-height: 210px;
+}
+.empty > svg {
+  color: var(--icon-muted, #8b9580);
+}
+.empty h2 {
+  color: var(--ink);
+  font-size: 20px;
+  margin: 0;
+}
+.empty p {
+  font-size: 14px;
+  margin: 0;
+  max-width: 48ch;
+}
+.empty > .button {
+  margin-top: 8px;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 23px;
+}
+
+/* Demo pill in the header: where the data lives, and a way to switch profile or refresh. */
+.demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface-tint, #f0f2e9);
+  color: var(--subtle-text, #656d5f);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.demo-pill a {
+  margin-left: 4px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+/* Full version with Django: the pill offers a manual refresh instead of a profile switch. */
+.demo-pill > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.demo-pill > button:hover .demo-pill-action {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.demo-pill > button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+@media (max-width: 1150px) {
+  .demo-pill-action {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+.demo-pill-short {
+  display: none;
+}
+
+/* Figures read as one line: «12 открытых задач | 1 на проверке | 1 просрочено». */
+.stat:first-child {
+  padding-left: 0;
+}
+.stat + .stat {
+  border-left: 1px solid var(--line);
+}
+.stat > strong.accent {
+  color: var(--orange-dark);
+}
+a.stat:hover > span {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Sidebar: workspace name under the brand, no boxed label; demo modules apart. */
+.sidebar-brand > div {
+  display: grid;
+  gap: 6px;
+}
+.workspace-name {
+  color: var(--muted);
+  font-size: 12px;
+}
+.nav-group {
+  margin: 20px 12px 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sidebar-nav > a.nav-demo:not(.active) {
+  color: var(--muted);
+}
+.sidebar-nav > a.nav-demo:not(.active) img {
+  opacity: 0.55;
+}

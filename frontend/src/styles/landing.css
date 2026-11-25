@@ -1,0 +1,187 @@
+/* Public home page sections outside the hero. */
+
+.landing {
+  background: var(--surface);
+  color: var(--ink);
+}
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  min-height: 88px;
+  padding: 20px max(40px, calc((100vw - 1792px) / 2));
+  background: var(--surface);
+  position: relative;
+  z-index: 10;
+}
+.landing-header .brand {
+  font-size: 29px;
+}
+.landing-header > nav {
+  display: flex;
+  gap: 46px;
+  margin-left: auto;
+  margin-right: 60px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.landing-header > nav > a {
+  position: relative;
+  padding: 6px 0;
+}
+.landing-header > nav > a:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--ink);
+  bottom: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.18s var(--ease);
+}
+.landing-header > nav > a:hover:after {
+  transform: scaleX(1);
+}
+.landing-header > .button {
+  min-width: 130px;
+}
+.landing-features,
+.landing-team {
+  padding: 100px max(40px, calc((100vw - 1640px) / 2));
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.landing-section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 50px;
+  align-items: flex-end;
+  margin-bottom: 54px;
+}
+.landing-section-heading > h2 {
+  font-family: 'Roboto Condensed Variable', sans-serif;
+  font-size: clamp(40px, 4vw, 70px);
+  letter-spacing: -0.035em;
+  font-weight: 750;
+  line-height: 1.02;
+  margin: 0;
+}
+.landing-section-heading > h2 > span {
+  color: var(--icon-muted, #77806c);
+}
+.landing-section-heading > p {
+  max-width: 37ch;
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0;
+}
+.feature-index {
+  font-family: 'Roboto Condensed Variable', sans-serif;
+  font-size: 24px;
+  color: var(--orange-dark);
+  font-weight: 600;
+}
+.process-track > div {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 6px 18px;
+  min-height: 130px;
+  padding: 14px 0 24px;
+}
+.process-track > div > span {
+  grid-row: 1/3;
+  background: var(--orange);
+  color: var(--on-accent);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.process-track h3 {
+  font-size: 22px;
+  margin: 3px 0;
+}
+.process-track p {
+  grid-column: 2;
+  font-size: 14px;
+  margin: 0;
+}
+.process-track > div > svg {
+  position: absolute;
+  left: 8px;
+  bottom: 0;
+  color: #7d8c6e;
+}
+.role-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+  margin-top: 35px;
+}
+.role-columns > div {
+  padding-top: 30px;
+  border-top: 2px solid var(--ink);
+}
+.role-columns h3 {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+}
+.role-columns p {
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0;
+  max-width: 34ch;
+}
+.landing-footer {
+  background: var(--strong);
+  color: #f4f5ee;
+  padding: 90px max(40px, calc((100vw - 1640px) / 2)) 35px;
+  min-height: 70svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 80px;
+}
+.landing-footer > h2 {
+  font-family: 'Roboto Condensed Variable', sans-serif;
+  text-transform: uppercase;
+  font-size: clamp(65px, 9vw, 150px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  margin: 0;
+  font-weight: 750;
+}
+.landing-footer > h2 > span {
+  color: var(--orange);
+}
+.landing-footer-bottom {
+  border-top: 1px solid #444c3b;
+  padding-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  flex-wrap: wrap;
+}
+.landing-footer-bottom > span {
+  font-size: 12px;
+  color: #c0c7b6;
+}
+
+.process-track {
+  position: relative;
+}
+.landing .landing-team {
+  min-height: 0;
+}

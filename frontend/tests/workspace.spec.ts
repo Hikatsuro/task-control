@@ -81,9 +81,10 @@ test('возврат, комментарий и локальное вложен�
   expect((await download).suggestedFilename()).toBe('result.txt');
   await page.getByRole('link', { name: 'Вся история задачи', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'История задачи', exact: true })).toBeVisible();
-  await expect(
-    page.getByText(/На проверке → В работе\. Добавить проверку обязательных полей/),
-  ).toBeVisible();
+  // The history feed shows the return as an event with the reason quoted under it.
+  const returned = page.getByRole('listitem').filter({ hasText: 'Возвращена на доработку' });
+  await expect(returned).toBeVisible();
+  await expect(returned.getByText('Добавить проверку обязательных полей.')).toBeVisible();
 });
 test('администратор создаёт и блокирует пользователя', async ({ page }) => {
   await login(page, 'u4');

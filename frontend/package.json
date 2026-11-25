@@ -17,9 +17,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@fontsource-variable/roboto": "^5.2.9",
     "@fontsource-variable/roboto-condensed": "^5.2.8",
-    "@react-three/fiber": "^9.8.2",
     "@tailwindcss/vite": "^4.1.17",
-    "write-excel-file": "^4.1.1",
     "idb-keyval": "^6.2.2",
     "lucide-react": "^0.554.0",
     "motion": "^12.23.24",
@@ -27,7 +25,7 @@
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
     "tailwindcss": "^4.1.17",
-    "three": "^0.187.0",
+    "write-excel-file": "^4.1.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -36,7 +34,6 @@
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

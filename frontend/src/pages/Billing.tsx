@@ -1,11 +1,14 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Clock3, CreditCard, XCircle } from 'lucide-react';
 import { useWorkspace } from '../state/workspace-context';
+import { DjangoError, request, write } from '../data/django';
 import { formatDate, offsetDate, requireCondition } from '../domain/model';
 import {
   ActionLink,
   Button,
   CheckLine,
+  Confirm,
   NotFound,
   Notice,
   PageHeading,
@@ -13,9 +16,42 @@ import {
   Screen,
 } from '../components/ui';
 
+type BillingInfo = {
+  plan: 'basic' | 'pro';
+  expires_at: string | null;
+  configured: boolean;
+  price: string;
+  currency: string;
+  days: number;
+  last_order: { status: string; created_at: string } | null;
+};
+
+const basicFeatures = [
+  'Проекты и задачи',
+  'Kanban и календарь',
+  'Комментарии и файлы',
+  'Контроль сроков и приёмка',
+  'Основные отчёты',
+];
+const proFeatures = [
+  'AI-сводки по проектам',
+  'Будущий ML-прогноз сроков',
+  'Расширенные представления аналитики',
+];
+
+function messageOf(error: unknown) {
+  return error instanceof DjangoError ? error.message : 'Не удалось связаться с сервером.';
+}
+
 export function Billing() {
-  const { data, user, server } = useWorkspace();
+  const { data, user, server, transact, busy } = useWorkspace();
   if (user?.role !== 'manager') return <NotFound forbidden />;
+  if (server) return <ServerBilling />;
+  const cancelDemo = () =>
+    transact(
+      (d) => ({ ...d, subscription: { plan: 'basic', expiresAt: null } }),
+      'Подписка аннулирована. Тариф снова «Базовый».',
+    );
   return (
     <Screen>
       <PageHeading
@@ -23,20 +59,14 @@ export function Billing() {
         description="Основная работа с задачами доступна в базовом тарифе."
       />
       <Notice>
-        Демонстрация интерфейса подписки. PayPal Sandbox ещё не подключён. Настоящие платежи и
-        списания не выполняются.
+        Демонстрация интерфейса подписки. PayPal Sandbox подключается при работе с сервером.
+        Настоящие платежи и списания не выполняются.
       </Notice>
       <div className="pricing-grid">
         <Panel title="Базовый">
           <div className="plan-price">Бесплатно</div>
           <p>Всё для планирования и контроля задач.</p>
-          {[
-            'Проекты и задачи',
-            'Kanban и календарь',
-            'Комментарии и файлы',
-            'Контроль сроков и приёмка',
-            'Основные отчёты',
-          ].map((text) => (
+          {basicFeatures.map((text) => (
             <CheckLine key={text}>{text}</CheckLine>
           ))}
           <span className="badge status-new">
@@ -53,28 +83,152 @@ export function Billing() {
             $5 <span>/ 30 дней</span>
           </div>
           <p>Условная цена для демонстрационного сценария подписки.</p>
-          {[
-            'Будущие AI-сводки по проектам',
-            'Будущий ML-прогноз сроков',
-            'Расширенные представления аналитики',
-          ].map((text) => (
+          {proFeatures.map((text) => (
             <CheckLine key={text}>{text}</CheckLine>
           ))}
           {data.subscription.plan === 'pro' ? (
-            <Notice tone="success">
-              Демотариф активирован до {formatDate(data.subscription.expiresAt ?? '')}.
-            </Notice>
-          ) : !server ? (
-            <ActionLink to="/app/billing/checkout">Посмотреть тестовую оплату</ActionLink>
+            <>
+              <Notice tone="success">
+                Демотариф активирован до {formatDate(data.subscription.expiresAt ?? '')}.
+              </Notice>
+              <Button variant="secondary" disabled={busy} onClick={() => void cancelDemo()}>
+                Аннулировать подписку
+              </Button>
+            </>
           ) : (
-            <span className="badge status-new">Подключение оплаты запланировано</span>
+            <ActionLink to="/app/billing/checkout">Посмотреть тестовую оплату</ActionLink>
           )}
-          <small>AI и ML сейчас доступны как явно обозначенные демонстрации.</small>
+          <small>В браузерном демо подписка и аннулирование хранятся только в этом браузере.</small>
         </section>
       </div>
     </Screen>
   );
 }
+
+/** Режим Django: состояние тарифа и оплата идут через сервер и PayPal Sandbox. */
+function ServerBilling() {
+  const { notify } = useWorkspace();
+  const [info, setInfo] = useState<BillingInfo | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    request<BillingInfo>('/billing/', controller.signal)
+      .then(setInfo)
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setLoadError(messageOf(error));
+      });
+    return () => controller.abort();
+  }, []);
+  // For the demonstration: the plan goes back to «Базовый» at once, so payment can be shown again.
+  async function cancelSubscription() {
+    setCancelling(true);
+    try {
+      await write('/billing/subscription/cancel/', 'POST');
+      setInfo(await request<BillingInfo>('/billing/'));
+      notify('Подписка аннулирована. Тариф снова «Базовый».');
+      setCancelOpen(false);
+    } catch (error) {
+      notify(messageOf(error), 'error');
+    } finally {
+      setCancelling(false);
+    }
+  }
+  async function pay() {
+    setPaying(true);
+    try {
+      const order = await write<{ approve_url: string }>('/billing/orders/', 'POST');
+      window.location.assign(order.approve_url);
+    } catch (error) {
+      notify(messageOf(error), 'error');
+      setPaying(false);
+    }
+  }
+  const pro = info?.plan === 'pro';
+  return (
+    <Screen>
+      <PageHeading
+        title="Тариф команды"
+        description="Основная работа с задачами доступна в базовом тарифе."
+      />
+      <Notice>
+        Оплата проходит через PayPal Sandbox: это тестовый режим, реальные деньги не списываются.
+        Тариф включается только после того, как сервер проверит платёж.
+      </Notice>
+      {loadError && <Notice tone="warning">{loadError}</Notice>}
+      {info && !info.configured && (
+        <Notice tone="warning">
+          PayPal Sandbox не настроен: задайте PAYPAL_CLIENT_ID и PAYPAL_CLIENT_SECRET на сервере.
+        </Notice>
+      )}
+      <div className="pricing-grid">
+        <Panel title="Базовый">
+          <div className="plan-price">Бесплатно</div>
+          <p>Всё для планирования и контроля задач.</p>
+          {basicFeatures.map((text) => (
+            <CheckLine key={text}>{text}</CheckLine>
+          ))}
+          <span className="badge status-new">Базовые функции включены</span>
+        </Panel>
+        <section className="pro-plan">
+          <div className="pro-heading">
+            <CreditCard size={25} />
+            <span>Для команды</span>
+          </div>
+          <h2>Расширенная аналитика</h2>
+          <div className="plan-price">
+            {info ? `${info.price} ${info.currency}` : '…'} <span>/ {info?.days ?? 30} дней</span>
+          </div>
+          <p>Тестовая подписка для учебного проекта.</p>
+          {proFeatures.map((text) => (
+            <CheckLine key={text}>{text}</CheckLine>
+          ))}
+          {pro && (
+            <Notice tone="success">
+              Тариф активен до{' '}
+              {formatDate(info?.expires_at ?? '', { day: 'numeric', month: 'long' })}. Повторная
+              оплата продлит его ещё на {info?.days} дней.
+            </Notice>
+          )}
+          {info?.last_order?.status === 'failed' && (
+            <Notice tone="warning">Последний платёж не прошёл проверку. Тариф не изменён.</Notice>
+          )}
+          <Button disabled={paying || !info?.configured} onClick={() => void pay()}>
+            {paying
+              ? 'Переходим в PayPal…'
+              : pro
+                ? 'Продлить через PayPal'
+                : 'Оплатить через PayPal'}
+          </Button>
+          {pro && (
+            <>
+              <Button variant="secondary" onClick={() => setCancelOpen(true)}>
+                Аннулировать подписку
+              </Button>
+              <small>
+                Аннулирование нужно для демонстрации: тариф сразу возвращается к «Базовому», и
+                оплату можно показать заново. Деньги в Sandbox не настоящие, возврат не требуется.
+              </small>
+            </>
+          )}
+        </section>
+      </div>
+      <Confirm
+        open={cancelOpen}
+        title="Аннулировать подписку?"
+        description="Расширенная аналитика отключится сразу, тариф станет «Базовым». История платежей сохранится. Оплатить снова можно в любой момент."
+        actionLabel="Аннулировать"
+        danger
+        busy={cancelling}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={() => void cancelSubscription()}
+      />
+    </Screen>
+  );
+}
+
 export function Checkout() {
   const { user, transact, busy, server } = useWorkspace();
   const navigate = useNavigate();
@@ -83,7 +237,11 @@ export function Checkout() {
     return (
       <Screen>
         <PageHeading title="Тестовая оплата" back="/app/billing" />
-        <Notice>Подключение PayPal Sandbox запланировано отдельно.</Notice>
+        <Notice>
+          Оплата начинается на странице тарифов: кнопка «Оплатить через PayPal» открывает PayPal
+          Sandbox.
+        </Notice>
+        <ActionLink to="/app/billing">К тарифам</ActionLink>
       </Screen>
     );
   function result(status: string) {
@@ -124,8 +282,7 @@ export function Checkout() {
             </div>
           </dl>
           <Notice tone="warning">
-            Платёжный провайдер не вызывается. Кнопки показывают разные варианты ответа будущей
-            интеграции.
+            Платёжный провайдер не вызывается. Кнопки показывают разные варианты ответа интеграции.
           </Notice>
         </Panel>
         <Panel title="Выберите сценарий">
@@ -151,10 +308,12 @@ export function Checkout() {
     </Screen>
   );
 }
+
 export function PaymentResult() {
   const [params] = useSearchParams();
-  const { user, data } = useWorkspace();
+  const { user, data, server } = useWorkspace();
   if (user?.role !== 'manager') return <NotFound forbidden />;
+  if (server) return <ServerPaymentResult />;
   const status = params.get('status');
   const success = status === 'success';
   const pending = status === 'pending';
@@ -179,7 +338,7 @@ export function PaymentResult() {
               ? 'Демонстрационный тариф включён локально. Денежных списаний нет.'
               : 'Показан макет успешного результата. Для активации демотарифа пройдите тестовый сценарий.'
             : pending
-              ? 'Будущий сервер будет ожидать подтверждение провайдера. В деморежиме статус сам не изменяется.'
+              ? 'Сервер ожидает подтверждение провайдера. В деморежиме статус сам не изменяется.'
               : 'Показан сценарий ошибки. Тариф не изменён; можно вернуться и повторить тест.'}
         </p>
         <div className="inline-actions">
@@ -187,6 +346,85 @@ export function PaymentResult() {
             К тарифам
           </ActionLink>
           {!success && <ActionLink to="/app/billing/checkout">Повторить тест</ActionLink>}
+        </div>
+      </section>
+    </Screen>
+  );
+}
+
+type Outcome = {
+  kind: 'loading' | 'success' | 'pending' | 'failed' | 'cancelled' | 'error';
+  text: string;
+};
+
+/** PayPal возвращает пользователя сюда с ?token=<id заказа>; результат подтверждает сервер. */
+function ServerPaymentResult() {
+  const [params] = useSearchParams();
+  const token = params.get('token');
+  const cancelled = params.get('status') === 'cancelled';
+  const [outcome, setOutcome] = useState<Outcome>(() =>
+    token
+      ? { kind: 'loading', text: 'Проверяем платёж на сервере…' }
+      : { kind: 'error', text: 'Не найден номер заказа PayPal. Начните оплату заново.' },
+  );
+  const started = useRef(false);
+  useEffect(() => {
+    if (!token || started.current) return;
+    started.current = true;
+    const action = cancelled ? 'cancel' : 'capture';
+    write<{ status: string }>(`/billing/orders/${action}/`, 'POST', { order_id: token })
+      .then(({ status }) => {
+        if (status === 'completed')
+          setOutcome({
+            kind: 'success',
+            text: 'Платёж подтверждён сервером, расширенная аналитика включена. Это тестовая оплата: деньги не списаны.',
+          });
+        else if (status === 'pending')
+          setOutcome({
+            kind: 'pending',
+            text: 'PayPal ещё обрабатывает платёж. Тариф включится после подтверждения; обновите страницу позже.',
+          });
+        else if (status === 'cancelled')
+          setOutcome({ kind: 'cancelled', text: 'Оплата отменена. Тариф не изменён.' });
+        else
+          setOutcome({
+            kind: 'failed',
+            text: 'Платёж не прошёл проверку на сервере. Тариф не изменён.',
+          });
+      })
+      .catch((error: unknown) => setOutcome({ kind: 'error', text: messageOf(error) }));
+  }, [token, cancelled]);
+  const Icon =
+    outcome.kind === 'success'
+      ? CheckCircle2
+      : outcome.kind === 'pending' || outcome.kind === 'loading'
+        ? Clock3
+        : XCircle;
+  const titles: Record<Outcome['kind'], string> = {
+    loading: 'Проверяем платёж',
+    success: 'Оплата прошла успешно',
+    pending: 'Ожидание подтверждения',
+    failed: 'Платёж не подтверждён',
+    cancelled: 'Оплата отменена',
+    error: 'Не удалось завершить оплату',
+  };
+  const tone =
+    outcome.kind === 'success'
+      ? 'payment-success'
+      : outcome.kind === 'pending' || outcome.kind === 'loading'
+        ? 'payment-pending'
+        : 'payment-error';
+  return (
+    <Screen>
+      <PageHeading title="Результат тестовой оплаты" />
+      <section className={`payment-result ${tone}`} aria-live="polite">
+        <Icon size={44} strokeWidth={1.5} />
+        <h2>{titles[outcome.kind]}</h2>
+        <p>{outcome.text}</p>
+        <div className="inline-actions">
+          <ActionLink to="/app/billing" secondary>
+            К тарифам
+          </ActionLink>
         </div>
       </section>
     </Screen>

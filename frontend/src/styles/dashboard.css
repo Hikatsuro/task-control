@@ -1,0 +1,54 @@
+/* Overview: dashboard, review queue, clients. */
+
+.dashboard-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.review-list > a {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--separator, #e8ebe2);
+}
+.review-list > a:first-child {
+  padding-top: 0;
+}
+.review-list > a:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.review-list > a > div {
+  flex: 1;
+}
+.review-list strong {
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+.review-list small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.review-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--orange);
+  flex-shrink: 0;
+}
+.client-icon,
+.notification-symbol {
+  width: 36px;
+  height: 36px;
+  background: var(--surface-tint, #eef0e7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  flex-shrink: 0;
+}

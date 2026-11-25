@@ -1,0 +1,132 @@
+/* Attachment upload states. */
+
+/* Upload — a drop zone and a row per file with its state. */
+.uploader {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.dropzone {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 26px 20px;
+  border: 1.5px dashed var(--control-border, #b9c0ae);
+  border-radius: 12px;
+  background: var(--canvas);
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.dropzone b {
+  color: var(--ink);
+}
+.dropzone small {
+  font-size: 12px;
+}
+.dropzone:hover,
+.dropzone[data-over='true'] {
+  border-color: var(--orange-dark);
+  background: var(--pale, #fdece3);
+}
+.dropzone:focus-within {
+  outline: 3px solid var(--orange-dark);
+  outline-offset: 2px;
+}
+.dropzone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.upload-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.upload-list li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.upload-icon {
+  color: var(--rep-open);
+}
+/* A freshly uploaded file flashes once in the list, then settles. */
+.files-list > .file-fresh {
+  animation: file-fresh 2.2s ease-out;
+}
+@keyframes file-fresh {
+  0%,
+  35% {
+    background: color-mix(in srgb, var(--rep-done) 14%, transparent);
+    box-shadow: inset 3px 0 var(--rep-done);
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 3px 0 transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .files-list > .file-fresh {
+    animation: none;
+  }
+}
+.upload-list li[data-state='error'] {
+  border-color: color-mix(in srgb, var(--rep-overdue) 45%, var(--line));
+}
+.upload-list li[data-state='error'] .upload-icon,
+.upload-list li[data-state='error'] small {
+  color: var(--danger-text, #963e30);
+}
+.upload-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.upload-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.upload-text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.upload-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track, #f0f2eb);
+  overflow: hidden;
+}
+.upload-bar i {
+  display: block;
+  height: 100%;
+  background: var(--rep-open);
+  transform-origin: left;
+  transition: transform 0.2s;
+}
+.upload-actions {
+  display: flex;
+  gap: 2px;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

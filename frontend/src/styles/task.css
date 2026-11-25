@@ -1,0 +1,130 @@
+/* Task page: details, comments, files, timeline. */
+
+.task-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.task-detail-layout > div {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+.task-detail-layout > aside {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.task-detail-status {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.task-detail-status > .muted {
+  font-size: 12px;
+  margin-left: auto;
+}
+.task-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 26px;
+}
+.task-detail-layout .inline-actions {
+  margin-top: 28px;
+}
+.comments-list {
+  margin-bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.comments-list > article {
+  display: flex;
+  gap: 12px;
+}
+.comments-list > article > div {
+  flex: 1;
+  min-width: 0;
+}
+.comments-list header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 30px;
+}
+.comments-list header > strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.comments-list time {
+  font-size: 11px;
+  color: var(--muted);
+}
+.comments-list header .button {
+  margin-left: auto;
+  min-height: 28px;
+  padding: 4px;
+}
+.comments-list p {
+  font-size: 14px;
+  margin: 7px 0 0;
+}
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.files-list > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--separator, #e9ece3);
+}
+.files-list > div > span {
+  flex: 1;
+  min-width: 0;
+}
+.files-list strong {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  font-weight: 550;
+}
+.files-list small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 3px;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.timeline > li {
+  display: flex;
+  gap: 14px;
+  padding: 0 0 24px;
+}
+.timeline > li:last-child {
+  padding-bottom: 0;
+}
+.timeline svg {
+  margin-top: 3px;
+  color: var(--orange-dark);
+  flex-shrink: 0;
+}
+.timeline p {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.timeline small {
+  font-size: 12px;
+  color: var(--muted);
+}

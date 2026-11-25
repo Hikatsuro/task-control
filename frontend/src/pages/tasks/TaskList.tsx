@@ -11,7 +11,6 @@ export function Tasks() {
     <Screen>
       <PageHeading
         title={params.get('mine') === '1' || user.role === 'employee' ? 'Мои задачи' : 'Задачи'}
-        description="Понятные поручения, сроки и результаты в одном списке."
         action={
           user.role === 'manager' && (
             <ActionLink to="/app/tasks/new">

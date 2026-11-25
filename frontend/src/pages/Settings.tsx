@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Check, KeyRound, Moon, RotateCcw, Settings2, Sun, UserRound } from 'lucide-react';
 import { persist, useWorkspace } from '../state/workspace-context';
-import { setTheme, useTheme } from '../state/theme';
+import { setTheme, themeOrigin, useTheme } from '../state/theme';
 import { formatDate, requireCondition, roleLabels } from '../domain/model';
 import {
   ActionLink,
@@ -355,7 +355,11 @@ export function Settings({ notificationsOnly = false }: { notificationsOnly?: bo
                     name="theme"
                     value={value}
                     checked={theme === value}
-                    onChange={() => setThemeSaveFailed(!setTheme(value))}
+                    onChange={(e) =>
+                      setThemeSaveFailed(
+                        !setTheme(value, themeOrigin(e.currentTarget.closest('label'))),
+                      )
+                    }
                   />
                   <span className="theme-choice-content">
                     <span className="theme-preview" aria-hidden="true">

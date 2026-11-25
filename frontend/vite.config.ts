@@ -1,56 +1,17 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { createReadStream, existsSync } from 'node:fs';
-import { join } from 'node:path';
-import type { Connect, Plugin } from 'vite';
 
-const modelNames = ['eric-seated', 'carla-seated', 'eric-handshake', 'claudia-handshake'];
-const publicPeople = modelNames.every((name) =>
-  existsSync(new URL(`./public/models/people-local/${name}.glb`, import.meta.url)),
-);
-
-function serveLocalPeople(folder: string): Plugin {
-  const files = new Map(
-    modelNames.map((name) => [`/models/people-local/${name}.glb`, join(folder, `${name}.glb`)]),
-  );
-  const serve: Connect.NextHandleFunction = (request, response, next) => {
-    const file = files.get(request.url?.split('?')[0] ?? '');
-    if (!file || (request.method !== 'GET' && request.method !== 'HEAD')) return next();
-    response.setHeader('Content-Type', 'model/gltf-binary');
-    if (request.method === 'HEAD') return response.end();
-    const stream = createReadStream(file);
-    stream.on('error', (error) => {
-      if (response.headersSent) response.destroy(error);
-      else next(error);
-    });
-    stream.pipe(response);
-  };
-  return {
-    name: 'taskcontrol-local-people',
-    configureServer(server) {
-      server.middlewares.use(serve);
-    },
-    configurePreviewServer(server) {
-      server.middlewares.use(serve);
-    },
-  };
-}
-
-const modelFolder = process.env.TASKCONTROL_LOCAL_MODELS_DIR;
+// The client talks to Django through this proxy, so cookies and CSRF stay same-origin.
 const proxy = {
   '/api': {
-    target: process.env.TASKCONTROL_BACKEND_URL || 'http://127.0.0.1:8012',
+    target: process.env.TASKCONTROL_BACKEND_URL || 'http://127.0.0.1:8000',
     changeOrigin: false,
   },
 };
-if (modelFolder && !modelNames.every((name) => existsSync(join(modelFolder, `${name}.glb`)))) {
-  throw new Error('TASKCONTROL_LOCAL_MODELS_DIR must contain all four TaskControl GLB files.');
-}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), ...(modelFolder ? [serveLocalPeople(modelFolder)] : [])],
-  define: { __HAS_LOCAL_PEOPLE__: JSON.stringify(publicPeople || Boolean(modelFolder)) },
+  plugins: [react(), tailwindcss()],
   optimizeDeps: { include: ['write-excel-file/universal'] },
   build: {
     rollupOptions: {
@@ -67,12 +28,16 @@ export default defineConfig({
       },
     },
   },
+  // Ports of the full version: the site on 8080 (TASKCONTROL_FRONTEND_URL in backend/.env points
+  // here: PayPal returns and AI card links), Django on its default 8000 (proxy above; gunicorn
+  // listens on 8000 in Docker too). The root frontend/
+  // keeps 5173/4173 and its e2e; this version's e2e run on 5188 (playwright.config.ts).
   server: {
     proxy,
-    port: 5173,
+    port: 8080,
     strictPort: true,
-    watch: { ignored: ['**/playwright-report/**', '**/test-results/**', '**/qa/**'] },
+    watch: { ignored: ['**/playwright-report/**', '**/test-results/**'] },
   },
-  preview: { port: 4173, strictPort: true, proxy },
+  preview: { port: 4188, strictPort: true, proxy },
   test: { include: ['src/**/*.test.ts'] },
 });

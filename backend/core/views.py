@@ -16,7 +16,7 @@ from .models import Customer, Department, Notification, Role, Task, TaskAttachme
 from .permissions import IsManager
 from .serializers import (CustomerSerializer, ProjectSerializer, TaskCreateSerializer,
                           TaskSerializer, UserSerializer)
-from api_client import format_project_tasks
+from ml.api_client import format_project_tasks
 from .workspace import make_reminders, notify_task
 
 
