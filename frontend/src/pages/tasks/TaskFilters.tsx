@@ -1,25 +1,94 @@
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button, Field } from '../../components/ui';
+import { useTabIndicator } from '../../components/useTabIndicator';
 import {
   availableProjects,
+  formatDate,
   priorities,
   priorityLabels,
   statuses,
   statusLabels,
 } from '../../domain/model';
+import type { Priority, Status } from '../../domain/model';
 import { useFilteredTasks } from './useFilteredTasks';
+
+const periodLabels: Record<string, string> = {
+  today: 'Сегодня',
+  week: 'Ближайшая неделя',
+  month: 'Ближайшие 30 дней',
+};
+
+/** Applied filters as removable chips, with one action to clear them all. */
+function ActiveFilters() {
+  const { data, params, change } = useFilteredTasks();
+  const [, setParams] = useSearchParams();
+  const name = (list: { id: string; name: string }[], id: string) =>
+    list.find((x) => x.id === id)?.name ?? id;
+  const chips = [
+    ['q', 'Поиск', (v: string) => `«${v}»`],
+    ['project', 'Проект', (v: string) => name(data.projects, v)],
+    [
+      'status',
+      'Статус',
+      (v: string) => (v === 'overdue' ? 'Просроченные' : (statusLabels[v as Status] ?? v)),
+    ],
+    ['assignee', 'Исполнитель', (v: string) => name(data.users, v)],
+    ['priority', 'Приоритет', (v: string) => priorityLabels[v as Priority] ?? v],
+    ['period', 'Период', (v: string) => periodLabels[v] ?? v],
+    ['from', 'Срок от', (v: string) => formatDate(v)],
+    ['until', 'Срок до', (v: string) => formatDate(v)],
+  ] as const;
+  const active = chips.filter(([key]) => params.get(key));
+  if (!active.length) return null;
+  return (
+    <div className="filter-chips" aria-label="Применённые фильтры">
+      {active.map(([key, label, show]) => (
+        <span key={key} className="filter-chip">
+          <span>
+            {label}: <b>{show(params.get(key) ?? '')}</b>
+          </span>
+          <button
+            type="button"
+            aria-label={`Убрать фильтр «${label}»`}
+            onClick={() => change(key, '')}
+          >
+            <X size={14} />
+          </button>
+        </span>
+      ))}
+      <button
+        type="button"
+        className="filter-clear"
+        onClick={() => {
+          // Keep the sort order and the «mine» scope; drop every filter.
+          const current = new URLSearchParams(window.location.search);
+          const next = new URLSearchParams();
+          for (const keep of ['sort', 'mine']) {
+            const value = current.get(keep);
+            if (value) next.set(keep, value);
+          }
+          setParams(next, { replace: true });
+        }}
+      >
+        Сбросить всё
+      </button>
+    </div>
+  );
+}
 
 export function TaskFilters({ view }: { view: 'list' | 'board' | 'calendar' }) {
   const { data, user, params, change } = useFilteredTasks();
   const [expanded, setExpanded] = useState(false);
+  // List, Kanban and Calendar are separate routes; the underline carries over between them.
+  const viewTabs = useTabIndicator<HTMLElement>(view, 'task-views');
   if (!user) return null;
   const query = params.toString();
   return (
     <>
       <div className="filter-toolbar">
-        <nav className="view-tabs" aria-label="Вид задач">
+        <nav ref={viewTabs} className="view-tabs has-indicator" aria-label="Вид задач">
           {[
             ['list', '/app/tasks', 'Список'],
             ['board', '/app/board', 'Kanban'],
@@ -29,10 +98,12 @@ export function TaskFilters({ view }: { view: 'list' | 'board' | 'calendar' }) {
               key={id}
               to={`${path}${query ? '?' + query : ''}`}
               aria-current={id === view ? 'page' : undefined}
+              data-active={id === view}
             >
               {title}
             </Link>
           ))}
+          <span className="tab-indicator" aria-hidden="true" />
         </nav>
         <div className="filter-inputs">
           <label className="search-field">
@@ -102,6 +173,7 @@ export function TaskFilters({ view }: { view: 'list' | 'board' | 'calendar' }) {
           <option value="month">Ближайшие 30 дней</option>
         </select>
       </div>
+      <ActiveFilters />
       {expanded && (
         <div className="advanced-filters">
           <Field label="Исполнитель">

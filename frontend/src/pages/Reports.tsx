@@ -24,6 +24,8 @@ import {
   Stat,
   StatusBadge,
 } from '../components/ui';
+import { DeadlineChart, Legend, MiniProgress, PeopleChart } from './reportCharts';
+import { onTimeShare } from './reportData';
 
 export function Reports() {
   const { data, user, notify } = useWorkspace();
@@ -47,6 +49,7 @@ export function Reports() {
       t.dueDate <= until,
   );
   const total = tasks.length;
+  const onTime = onTimeShare(tasks);
   async function exportExcel() {
     setExporting(true);
     try {
@@ -90,8 +93,7 @@ export function Reports() {
   return (
     <Screen>
       <PageHeading
-        title="Аналитика и отчёты"
-        description="Состояние задач, сроки и прогресс проектов."
+        title="Отчёты"
         action={
           <div className="report-actions">
             <Button variant="secondary" onClick={() => window.print()}>
@@ -130,10 +132,23 @@ export function Reports() {
         Отчёт TaskControl · {formatDate(from)} — {formatDate(until)} · По плановым срокам задач
       </p>
       <div className="stats-row">
-        <Stat value={total} label="Всего задач за период" />
-        <Stat value={tasks.filter((t) => t.status === 'done').length} label="Выполнено" />
-        <Stat value={tasks.filter((t) => isOverdue(t)).length} label="Просрочено сейчас" accent />
+        <Stat value={total} label="задач за период" countUp />
+        <Stat value={tasks.filter((t) => t.status === 'done').length} label="выполнено" countUp />
+        <Stat
+          value={tasks.filter((t) => isOverdue(t)).length}
+          label="просрочено сейчас"
+          accent
+          countUp
+        />
+        <Stat value={onTime === null ? '—' : `${onTime}%`} label="принято в срок" countUp />
       </div>
+      <Panel title="Сроки по неделям" action={<Legend />}>
+        <p className="rep-note">
+          Задачи по плановому сроку и их состояние на сегодня. Наведите на столбец, чтобы увидеть
+          числа.
+        </p>
+        <DeadlineChart tasks={tasks} from={from} until={until} />
+      </Panel>
       <div className="two-columns">
         <Panel title="Распределение по статусам">
           <div
@@ -160,27 +175,8 @@ export function Reports() {
             })}
           </div>
         </Panel>
-        <Panel title="Задачи по сотрудникам">
-          <div className="employee-bars">
-            {data.users
-              .filter((u) => tasks.some((t) => t.assigneeId === u.id))
-              .map((u) => {
-                const count = tasks.filter((t) => t.assigneeId === u.id).length;
-                return (
-                  <div key={u.id}>
-                    <Link to={`/app/team/${u.id}`}>{u.name}</Link>
-                    <div className="chart-track">
-                      <span
-                        className="chart-bar"
-                        style={{ width: `${total ? (count / total) * 100 : 0}%` }}
-                      />
-                    </div>
-                    <strong>{count}</strong>
-                  </div>
-                );
-              })}
-            {!total && <p className="muted">За выбранный период задач нет.</p>}
-          </div>
+        <Panel title="Задачи по сотрудникам" action={<Legend />}>
+          <PeopleChart tasks={tasks} users={data.users} />
         </Panel>
       </div>
       <Panel title="Прогресс проектов">
@@ -206,7 +202,9 @@ export function Reports() {
                       </td>
                       <td>{items.length}</td>
                       <td>{items.filter((t) => t.status === 'done').length}</td>
-                      <td>{projectProgress(items)}%</td>
+                      <td>
+                        <MiniProgress value={projectProgress(items)} />
+                      </td>
                     </tr>
                   );
                 })}

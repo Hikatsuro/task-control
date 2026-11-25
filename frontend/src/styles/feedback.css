@@ -1,0 +1,150 @@
+/* Skeletons, dialogs, toasts, loading and recovery screens. */
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px 0;
+}
+.skeleton-list > div {
+  height: 48px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-low, #edf0e6),
+    var(--surface-raised, #f7f8f3),
+    var(--skeleton-low, #edf0e6)
+  );
+  background-size: 200% 100%;
+  animation: skeleton 1.4s linear infinite;
+  border-radius: 4px;
+}
+.skeleton-list > div:nth-child(2) {
+  width: 85%;
+}
+.skeleton-list > div:nth-child(3) {
+  width: 65%;
+}
+@keyframes skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+.modal {
+  /* Tailwind's preflight zeroes the margin that centres a modal <dialog>. */
+  margin: auto;
+  border: 0;
+  border-radius: 10px;
+  max-width: 580px;
+  width: calc(100% - 32px);
+  max-height: calc(100svh - 48px);
+  padding: 28px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 22px 90px var(--shadow-modal, #20231f40);
+}
+.modal::backdrop {
+  background: var(--overlay, #20231f70);
+}
+.modal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.modal-heading h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.modal-heading > .button {
+  min-height: 32px;
+  padding: 5px;
+}
+.modal > p {
+  color: var(--muted);
+  font-size: 14px;
+}
+.modal .details {
+  margin-bottom: 24px;
+}
+.modal .notice {
+  margin-top: 20px;
+}
+.toasts {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(410px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  background: var(--strong);
+  color: white;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 17px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 8px 30px var(--shadow-toast, #20231f20);
+  pointer-events: auto;
+}
+.toast > span {
+  flex: 1;
+}
+.toast-error {
+  background: #8f3329;
+}
+.toast-info {
+  background: #465240;
+}
+.toast > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: 0;
+  color: inherit;
+}
+.loading-screen,
+.recovery-page {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 60px max(30px, calc((100vw - 800px) / 2));
+}
+.loading-screen {
+  align-items: center;
+  padding: 40px;
+}
+.recovery-page h1 {
+  font-size: 42px;
+  margin: 0;
+}
+.recovery-page p {
+  max-width: 65ch;
+  margin: 0;
+}
+
+.modal[open] {
+  animation: dialog-enter 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

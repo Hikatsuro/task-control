@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowUpRight, Plus, Search, ShieldCheck, Users } from 'lucide-react';
+import { ChevronRight, Plus, Search, ShieldCheck, Users } from 'lucide-react';
 import { persist, useWorkspace } from '../state/workspace-context';
-import { availableTasks, newId, requireCondition, roleLabels, roles } from '../domain/model';
+import {
+  availableTasks,
+  isOverdue,
+  newId,
+  offsetDate,
+  requireCondition,
+  roleLabels,
+  roles,
+} from '../domain/model';
 import type { Role } from '../domain/model';
 import { saveUser } from '../domain/commands';
 import {
@@ -18,8 +26,11 @@ import {
   PageHeading,
   Panel,
   Screen,
+  Stat,
 } from '../components/ui';
 import { TaskTable } from '../components/TaskTable';
+import { DeadlineChart, GroupChart, Legend } from './reportCharts';
+import { averageDays, onTimeShare } from './reportData';
 
 export function Team({ admin = false }: { admin?: boolean }) {
   const { data, user, transact, busy, server } = useWorkspace();
@@ -133,7 +144,7 @@ export function Team({ admin = false }: { admin?: boolean }) {
                           aria-label={`Задачи ${member.name}`}
                           to={`/app/team/${member.id}`}
                         >
-                          <ArrowUpRight size={18} />
+                          <ChevronRight size={18} />
                         </Link>
                       )}
                     </div>
@@ -174,6 +185,11 @@ export function MemberDetail() {
   if (!user) return null;
   const member = data.users.find((u) => u.id === id);
   if (!member) return <NotFound />;
+  const tasks = availableTasks(data, user).filter((t) => t.assigneeId === id);
+  const from = offsetDate(-28);
+  const until = offsetDate(28);
+  const onTime = onTimeShare(tasks);
+  const average = averageDays(tasks);
   return (
     <Screen>
       <PageHeading title={member.name} description={member.position} back="/app/team" />
@@ -194,10 +210,74 @@ export function MemberDetail() {
         </dl>
       </Panel>
       <div className="section-heading">
-        <h2>Задачи сотрудника</h2>
+        <h2>Статистика</h2>
       </div>
-      <Notice>Показаны только задачи, доступные текущему профилю.</Notice>
-      <TaskTable tasks={availableTasks(data, user).filter((t) => t.assigneeId === id)} />
+      {tasks.length ? (
+        <>
+          <div className="stats-row">
+            <Stat
+              value={tasks.filter((t) => t.status !== 'done').length}
+              label="открытых"
+              countUp
+            />
+            <Stat
+              value={tasks.filter((t) => t.status === 'in_review').length}
+              label="на проверке"
+              countUp
+            />
+            <Stat
+              value={tasks.filter((t) => t.status === 'done').length}
+              label="выполнено"
+              countUp
+            />
+            <Stat
+              value={tasks.filter((t) => isOverdue(t)).length}
+              label="просрочено"
+              accent
+              countUp
+            />
+            <Stat value={onTime === null ? '—' : `${onTime}%`} label="принято в срок" countUp />
+            <Stat
+              value={average === null ? '—' : `${String(average).replace('.', ',')} дн.`}
+              label="в среднем до приёмки"
+            />
+          </div>
+          <div className="member-charts">
+            <Panel title="Сроки по неделям" action={<Legend />}>
+              <p className="rep-note">
+                Задачи с плановым сроком за четыре недели до и после сегодняшнего дня.
+              </p>
+              <DeadlineChart tasks={tasks} from={from} until={until} />
+            </Panel>
+            <Panel title="По проектам" action={<Legend />}>
+              <GroupChart
+                tasks={tasks}
+                empty="Задач в проектах нет."
+                groups={data.projects.map((p) => ({
+                  id: p.id,
+                  label: p.name,
+                  to: `/app/projects/${p.id}`,
+                  match: (t) => t.projectId === p.id,
+                }))}
+              />
+            </Panel>
+          </div>
+        </>
+      ) : (
+        <Empty
+          title="Статистики пока нет"
+          description="У сотрудника нет задач, доступных текущему профилю."
+        />
+      )}
+      {tasks.length > 0 && (
+        <>
+          <div className="section-heading">
+            <h2>Задачи сотрудника</h2>
+          </div>
+          <Notice>Показаны только задачи, доступные текущему профилю.</Notice>
+          <TaskTable tasks={tasks} />
+        </>
+      )}
     </Screen>
   );
 }
@@ -354,7 +434,7 @@ export function Departments() {
               {data.users.filter((u) => u.departmentId === department.id).length} участника
             </div>
             <Link className="text-link" to={`/app/departments/${department.id}/edit`}>
-              Изменить отдел <ArrowUpRight size={16} />
+              Изменить отдел <ChevronRight size={16} />
             </Link>
           </Panel>
         ))}

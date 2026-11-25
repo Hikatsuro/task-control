@@ -2,7 +2,8 @@ from django.urls import path
 
 from . import views
 from .account import ConfirmReset, RequestReset
-from .billing import BillingStatus, CancelOrder, CaptureOrder, CreateOrder
+from .assistant import AssistantChat, ProjectSummary
+from .billing import BillingStatus, CancelOrder, CancelSubscription, CaptureOrder, CreateOrder
 from .workspace import TaskFile, TaskFiles, WorkspaceCommands
 
 urlpatterns = [
@@ -18,6 +19,9 @@ urlpatterns = [
     path("billing/orders/", CreateOrder.as_view()),
     path("billing/orders/capture/", CaptureOrder.as_view()),
     path("billing/orders/cancel/", CancelOrder.as_view()),
+    path("billing/subscription/cancel/", CancelSubscription.as_view()),
+    path("assistant/summary/", ProjectSummary.as_view()),
+    path("assistant/chat/", AssistantChat.as_view()),
     path("customers/", views.CustomerListCreate.as_view()),
     path("projects/", views.ProjectListCreate.as_view()),
     path("projects/<int:pk>/", views.ProjectDetail.as_view()),

@@ -1,0 +1,55 @@
+/* Help pages. */
+
+.help-intro {
+  display: flex;
+  gap: 25px;
+  align-items: flex-start;
+  padding: 28px;
+  background: var(--surface-tint, #eef0e7);
+  border-radius: 6px;
+}
+.help-intro > svg {
+  flex-shrink: 0;
+  color: var(--orange-dark);
+}
+.help-intro h2 {
+  font-size: 26px;
+  margin: 0 0 12px;
+}
+.help-intro p {
+  margin: 0;
+  max-width: 74ch;
+  color: var(--muted);
+}
+.help-links {
+  display: flex;
+  flex-direction: column;
+}
+.help-links > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+}
+.help-links h2 {
+  font-size: 20px;
+  margin: 0 0 7px;
+}
+.help-links p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.help-links > a:hover h2 {
+  color: var(--orange-dark);
+}
+.requirements-table {
+  table-layout: fixed;
+  min-width: 840px;
+}
+.requirements-table td:first-child {
+  width: 20%;
+  font-weight: 550;
+}

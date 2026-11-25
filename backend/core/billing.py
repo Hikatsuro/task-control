@@ -179,3 +179,16 @@ class CancelOrder(APIView):
             order.status = PaymentOrder.Status.CANCELLED
             order.save(update_fields=["status"])
         return Response({"status": order.status})
+
+
+class CancelSubscription(APIView):
+    """Аннулирование подписки для демонстрации: тариф сразу возвращается к «Базовому».
+    История оплат остаётся; денег PayPal не возвращает (это тестовый Sandbox), а оплату
+    можно пройти заново сколько угодно раз."""
+
+    permission_classes = [IsManager]
+
+    @transaction.atomic
+    def post(self, request):
+        removed, _ = Subscription.objects.filter(user=request.user).delete()
+        return Response({"plan": "basic", "cancelled": bool(removed)})

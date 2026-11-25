@@ -1,0 +1,226 @@
+/* Notifications dropdown. */
+
+/* Notifications popover */
+.notify {
+  position: relative;
+}
+.notify > .notification-link {
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.notify-backdrop {
+  display: none;
+}
+.notify-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  max-height: min(560px, calc(100dvh - 100px));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 24px 60px -24px #1d1f1a66;
+  animation: command-in 0.14s ease-out;
+}
+.notify-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 8px;
+}
+.notify-panel h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.notify-readall {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  color: var(--orange-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notify-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.notify-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.notify-tabs button[aria-pressed='true'] {
+  background: var(--surface-tint, #f0f2e9);
+  color: var(--ink);
+  font-weight: 600;
+}
+.notify-tabs span {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--on-accent, #20231f);
+  font-size: 11px;
+}
+.notify-list {
+  flex: 1;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+.notify-list button {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notify-list button:hover {
+  background: var(--surface-tint, #f0f2e9);
+}
+.notify-list i {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+.notify-list li[data-unread='true'] i {
+  background: var(--orange);
+}
+.notify-list strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.notify-list li[data-unread='false'] strong {
+  font-weight: 500;
+  color: var(--muted);
+}
+.notify-list small {
+  display: block;
+  margin: 2px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.notify-list time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.notify-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 30px 24px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
+}
+.notify-empty strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+.notify-panel > footer {
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.notify-panel > footer a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .command-trigger-text,
+  .command-trigger kbd {
+    display: none;
+  }
+  /* On a phone the field folds back into an icon button next to the bell. */
+  .command-trigger {
+    flex: none;
+    min-width: 0;
+    width: 38px;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .command-menu {
+    margin-top: 8vh;
+  }
+  .command-foot {
+    display: none;
+  }
+  /* On a phone the notifications rise as a sheet from the bottom. */
+  .notify-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    background: color-mix(in srgb, var(--overlay, #20231f) 40%, transparent);
+  }
+  .notify-panel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 80dvh;
+    border-radius: 18px 18px 0 0;
+    animation: sheet-in 0.2s ease-out;
+  }
+  .history-feed > li {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .history-meta {
+    grid-column: 2;
+    grid-auto-flow: column;
+    justify-content: start;
+    align-items: center;
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(30%);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .filter-chip,
+  .command-menu[open],
+  .notify-panel {
+    animation: none;
+  }
+}

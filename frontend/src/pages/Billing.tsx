@@ -8,6 +8,7 @@ import {
   ActionLink,
   Button,
   CheckLine,
+  Confirm,
   NotFound,
   Notice,
   PageHeading,
@@ -33,7 +34,7 @@ const basicFeatures = [
   'Основные отчёты',
 ];
 const proFeatures = [
-  'Будущие AI-сводки по проектам',
+  'AI-сводки по проектам',
   'Будущий ML-прогноз сроков',
   'Расширенные представления аналитики',
 ];
@@ -43,9 +44,14 @@ function messageOf(error: unknown) {
 }
 
 export function Billing() {
-  const { data, user, server } = useWorkspace();
+  const { data, user, server, transact, busy } = useWorkspace();
   if (user?.role !== 'manager') return <NotFound forbidden />;
   if (server) return <ServerBilling />;
+  const cancelDemo = () =>
+    transact(
+      (d) => ({ ...d, subscription: { plan: 'basic', expiresAt: null } }),
+      'Подписка аннулирована. Тариф снова «Базовый».',
+    );
   return (
     <Screen>
       <PageHeading
@@ -81,13 +87,18 @@ export function Billing() {
             <CheckLine key={text}>{text}</CheckLine>
           ))}
           {data.subscription.plan === 'pro' ? (
-            <Notice tone="success">
-              Демотариф активирован до {formatDate(data.subscription.expiresAt ?? '')}.
-            </Notice>
+            <>
+              <Notice tone="success">
+                Демотариф активирован до {formatDate(data.subscription.expiresAt ?? '')}.
+              </Notice>
+              <Button variant="secondary" disabled={busy} onClick={() => void cancelDemo()}>
+                Аннулировать подписку
+              </Button>
+            </>
           ) : (
             <ActionLink to="/app/billing/checkout">Посмотреть тестовую оплату</ActionLink>
           )}
-          <small>AI и ML сейчас доступны как явно обозначенные демонстрации.</small>
+          <small>В браузерном демо подписка и аннулирование хранятся только в этом браузере.</small>
         </section>
       </div>
     </Screen>
@@ -100,6 +111,8 @@ function ServerBilling() {
   const [info, setInfo] = useState<BillingInfo | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     request<BillingInfo>('/billing/', controller.signal)
@@ -109,6 +122,20 @@ function ServerBilling() {
       });
     return () => controller.abort();
   }, []);
+  // For the demonstration: the plan goes back to «Базовый» at once, so payment can be shown again.
+  async function cancelSubscription() {
+    setCancelling(true);
+    try {
+      await write('/billing/subscription/cancel/', 'POST');
+      setInfo(await request<BillingInfo>('/billing/'));
+      notify('Подписка аннулирована. Тариф снова «Базовый».');
+      setCancelOpen(false);
+    } catch (error) {
+      notify(messageOf(error), 'error');
+    } finally {
+      setCancelling(false);
+    }
+  }
   async function pay() {
     setPaying(true);
     try {
@@ -160,19 +187,44 @@ function ServerBilling() {
           ))}
           {pro && (
             <Notice tone="success">
-              Тариф активен до {formatDate(info?.expires_at ?? '', { day: 'numeric', month: 'long' })}.
-              Повторная оплата продлит его ещё на {info?.days} дней.
+              Тариф активен до{' '}
+              {formatDate(info?.expires_at ?? '', { day: 'numeric', month: 'long' })}. Повторная
+              оплата продлит его ещё на {info?.days} дней.
             </Notice>
           )}
           {info?.last_order?.status === 'failed' && (
             <Notice tone="warning">Последний платёж не прошёл проверку. Тариф не изменён.</Notice>
           )}
           <Button disabled={paying || !info?.configured} onClick={() => void pay()}>
-            {paying ? 'Переходим в PayPal…' : pro ? 'Продлить через PayPal' : 'Оплатить через PayPal'}
+            {paying
+              ? 'Переходим в PayPal…'
+              : pro
+                ? 'Продлить через PayPal'
+                : 'Оплатить через PayPal'}
           </Button>
-          <small>AI и ML сейчас доступны как явно обозначенные демонстрации.</small>
+          {pro && (
+            <>
+              <Button variant="secondary" onClick={() => setCancelOpen(true)}>
+                Аннулировать подписку
+              </Button>
+              <small>
+                Аннулирование нужно для демонстрации: тариф сразу возвращается к «Базовому», и
+                оплату можно показать заново. Деньги в Sandbox не настоящие, возврат не требуется.
+              </small>
+            </>
+          )}
         </section>
       </div>
+      <Confirm
+        open={cancelOpen}
+        title="Аннулировать подписку?"
+        description="Расширенная аналитика отключится сразу, тариф станет «Базовым». История платежей сохранится. Оплатить снова можно в любой момент."
+        actionLabel="Аннулировать"
+        danger
+        busy={cancelling}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={() => void cancelSubscription()}
+      />
     </Screen>
   );
 }
@@ -230,8 +282,7 @@ export function Checkout() {
             </div>
           </dl>
           <Notice tone="warning">
-            Платёжный провайдер не вызывается. Кнопки показывают разные варианты ответа
-            интеграции.
+            Платёжный провайдер не вызывается. Кнопки показывают разные варианты ответа интеграции.
           </Notice>
         </Panel>
         <Panel title="Выберите сценарий">

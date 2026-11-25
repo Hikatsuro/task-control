@@ -27,19 +27,20 @@ import {
   StatusBadge,
   Tabs,
 } from '../../components/ui';
-import { attachmentRepository, MAX_FILE_SIZE } from '../../data/attachments';
-import { addAttachment, addComment, removeAttachment, removeComment } from '../../domain/commands';
+import { attachmentRepository } from '../../data/attachments';
+import { addComment, removeAttachment, removeComment } from '../../domain/commands';
 import {
   canManageProject,
   canViewTask,
   formatDate,
   isOverdue,
-  newId,
   nextStatuses,
   transition,
 } from '../../domain/model';
 import { persist, useWorkspace } from '../../state/workspace-context';
 import type { Status } from '../../domain/model';
+import { TaskHistory } from './TaskHistory';
+import { AttachmentUploader } from './AttachmentUploader';
 
 export function TaskDetail({
   historyOnly = false,
@@ -54,7 +55,8 @@ export function TaskDetail({
   const [tab, setTab] = useState(historyOnly ? 'history' : 'description');
   const [returnOpen, setReturnOpen] = useState(returnOnly || params.get('return') === '1');
   const [deleting, setDeleting] = useState<{ kind: 'comment' | 'file'; id: string } | null>(null);
-  const [uploading, setUploading] = useState(false);
+  // The file that was just uploaded gets a short highlight in the list.
+  const [freshFile, setFreshFile] = useState<string | null>(null);
   const task = data.tasks.find((t) => t.id === id);
   const project = data.projects.find((p) => p.id === task?.projectId);
   if (!user) return null;
@@ -74,42 +76,6 @@ export function TaskDetail({
               ? 'Работа принята.'
               : 'Статус задачи обновлён.',
         );
-  }
-  async function upload(file: File) {
-    if (!task || !user) return;
-    if (file.size > MAX_FILE_SIZE) {
-      notify('Максимальный размер файла — 10 МБ.', 'error');
-      return;
-    }
-    setUploading(true);
-    if (server) {
-      try {
-        await server.upload(task.id, file);
-      } finally {
-        setUploading(false);
-      }
-      return;
-    }
-    const attachment = {
-      id: newId('attachment'),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      authorId: user.id,
-      createdAt: new Date().toISOString(),
-    };
-    try {
-      await attachmentRepository.save(attachment.id, file);
-      const ok = await transact(
-        (d, a) => addAttachment(d, a, task.id, attachment),
-        'Файл прикреплён.',
-      );
-      if (!ok) await attachmentRepository.remove(attachment.id);
-    } catch {
-      notify('Не удалось сохранить файл в хранилище браузера.', 'error');
-    } finally {
-      setUploading(false);
-    }
   }
   async function download(fileId: string, name: string) {
     try {
@@ -251,27 +217,11 @@ export function TaskDetail({
             </Panel>
           ) : tab === 'files' ? (
             <Panel title="Прикреплённые файлы">
-              <Notice>
-                {server
-                  ? 'Файлы доступны участникам, которые видят задачу.'
-                  : 'Файлы сохраняются в этом браузере.'}{' '}
-                Максимальный размер одного файла — 10 МБ.
-              </Notice>
-              <Field label={uploading ? 'Сохраняем файл…' : 'Добавить файл'}>
-                <input
-                  type="file"
-                  disabled={uploading || busy}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void upload(file);
-                    e.target.value = '';
-                  }}
-                />
-              </Field>
+              <AttachmentUploader task={task} onUploaded={setFreshFile} />
               {task.attachments.length ? (
                 <div className="files-list">
                   {task.attachments.map((file) => (
-                    <div key={file.id}>
+                    <div key={file.id} className={file.id === freshFile ? 'file-fresh' : undefined}>
                       <Paperclip size={20} />
                       <span>
                         <strong>{file.name}</strong>
@@ -308,26 +258,7 @@ export function TaskDetail({
             </Panel>
           ) : (
             <Panel title="История изменений">
-              <ol className="timeline">
-                {[...task.activity].reverse().map((item) => (
-                  <li key={item.id}>
-                    <History size={17} />
-                    <div>
-                      <p>{item.text}</p>
-                      <small>
-                        {data.users.find((u) => u.id === item.authorId)?.name} ·{' '}
-                        {formatDate(item.createdAt, {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </small>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              {!task.activity.length && <p className="muted">Изменений пока нет.</p>}
+              <TaskHistory task={task} users={data.users} />
             </Panel>
           )}
         </div>

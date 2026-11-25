@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowUpRight, Building2, Plus, Search } from 'lucide-react';
+import { ChevronRight, Building2, Plus, Search } from 'lucide-react';
 import { persist, useWorkspace } from '../state/workspace-context';
 import { availableProjects } from '../domain/model';
 import { saveClient } from '../domain/commands';
@@ -28,7 +28,6 @@ export function Clients() {
     <Screen>
       <PageHeading
         title="Заказчики"
-        description="Контакты и проекты в одном справочнике."
         action={
           <ActionLink to="/app/clients/new">
             <Plus size={18} />
@@ -79,7 +78,7 @@ export function Clients() {
                       to={`/app/clients/${c.id}`}
                       aria-label={`Открыть ${c.name}`}
                     >
-                      <ArrowUpRight size={18} />
+                      <ChevronRight size={18} />
                     </Link>
                   </td>
                 </tr>

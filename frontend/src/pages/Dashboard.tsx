@@ -23,9 +23,9 @@ export function Dashboard() {
           }
         />
         <div className="stats-row">
-          <Stat value={data.users.length} label="Пользователей" to="/app/users" />
-          <Stat value={data.users.filter((u) => u.active).length} label="Активных профилей" />
-          <Stat value={data.departments.length} label="Отделов и групп" to="/app/departments" />
+          <Stat value={data.users.length} label="пользователей" to="/app/users" />
+          <Stat value={data.users.filter((u) => u.active).length} label="активных профилей" />
+          <Stat value={data.departments.length} label="отделов и групп" to="/app/departments" />
         </div>
         <Notice>
           Технический администратор управляет системой. Проекты и задачи доступны руководителям и
@@ -56,8 +56,7 @@ export function Dashboard() {
   return (
     <Screen>
       <PageHeading
-        title={user.role === 'manager' ? 'Работа под контролем' : 'Мой рабочий день'}
-        description={`Привет, ${user.name}. ${user.role === 'manager' ? 'Здесь собраны сроки, результаты и задачи команды.' : 'Здесь твои поручения и следующие шаги.'}`}
+        title={user.role === 'manager' ? 'Обзор' : 'Мой рабочий день'}
         action={
           user.role === 'manager' ? (
             <ActionLink to="/app/tasks/new">
@@ -74,13 +73,13 @@ export function Dashboard() {
       <div className="stats-row">
         <Stat
           value={tasks.filter((t) => t.status !== 'done').length}
-          label="Открытых задач"
+          label="открытых задач"
           to="/app/tasks"
         />
-        <Stat value={review.length} label="На проверке" to="/app/tasks?status=in_review" />
+        <Stat value={review.length} label="на проверке" to="/app/tasks?status=in_review" />
         <Stat
           value={tasks.filter((t) => isOverdue(t)).length}
-          label="Просроченных"
+          label="просрочено"
           accent
           to="/app/tasks?status=overdue"
         />

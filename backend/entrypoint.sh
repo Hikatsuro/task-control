@@ -9,4 +9,5 @@ if [ "${TASKCONTROL_SEED_DEMO:-0}" = "1" ]; then
   python manage.py shell -c "import seed_full_demo"
 fi
 
-exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --access-logfile -
+# --timeout: an AI summary from a local model can take up to two minutes.
+exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 180 --access-logfile -

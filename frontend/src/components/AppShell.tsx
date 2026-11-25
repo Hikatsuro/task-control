@@ -1,10 +1,13 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Bell, ChevronDown, HelpCircle, LogOut, Menu, RefreshCcw, Settings, X } from 'lucide-react';
+import { ChevronDown, HelpCircle, LogOut, Menu, RefreshCcw, Settings, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useWorkspace } from '../state/workspace-context';
+import { STORAGE_KEY } from '../data/repository';
 import { formatDate, roleLabels } from '../domain/model';
 import { Avatar, Brand, Button, Notice } from './ui';
+import { CommandMenu } from './CommandMenu';
+import { NotificationsPopover } from './NotificationsPopover';
 
 const businessNav = [
   ['overview', '/app', 'Обзор'],
@@ -18,8 +21,14 @@ const businessNav = [
   ['forecast', '/app/forecast', 'Прогноз сроков'],
   ['billing', '/app/billing', 'Тариф'],
 ] as const;
+// Modules that are demonstrations, not working features, sit in their own labelled group so
+// nobody mistakes them for the core of the system. With Django the AI assistant (local model)
+// and the plan (PayPal Sandbox) work for real; only the ML forecast is still a demonstration.
+const demoModulesOf = (server: boolean) =>
+  server ? ['forecast'] : ['assistant', 'forecast', 'billing'];
 export function AppShell() {
   const { data, user, ready, signOut, server, busy } = useWorkspace();
+  const demoModules = demoModulesOf(Boolean(server));
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   useEffect(() => {
@@ -45,11 +54,20 @@ export function AppShell() {
           ([icon]) =>
             !(user.role === 'employee' && ['clients', 'reports', 'billing'].includes(icon)),
         );
+  // Section name for the header; pages outside the menu still get a real name.
+  const sections = [
+    ...items,
+    ['', '/app/board', 'Задачи'],
+    ['', '/app/notifications', 'Уведомления'],
+    ['', '/app/profile', 'Профиль'],
+    ['', '/app/settings', 'Настройки'],
+    ['', '/app/help', 'Помощь'],
+    ['', '/app/archive', 'Проекты'],
+  ];
   const title =
-    items.find(([, path]) =>
+    sections.find(([, path]) =>
       path === '/app' ? location.pathname === path : location.pathname.startsWith(path),
     )?.[2] ?? 'Рабочее пространство';
-  const unread = data.notifications.filter((n) => n.userId === user.id && !n.read).length;
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
@@ -64,7 +82,10 @@ export function AppShell() {
       )}
       <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          <Brand />
+          <div>
+            <Brand />
+            <span className="workspace-name">{data.settings.name}</span>
+          </div>
           <Button
             variant="ghost"
             className="mobile-only"
@@ -74,17 +95,41 @@ export function AppShell() {
             <X size={20} />
           </Button>
         </div>
-        <div className="workspace-label">
-          <span>Рабочая группа</span>
-          <strong>{data.settings.name}</strong>
-        </div>
         <nav aria-label="Основная навигация" className="sidebar-nav">
-          {items.map(([icon, path, label]) => (
-            <NavLink key={path} to={path} end={path === '/app'} onClick={() => setMenuOpen(false)}>
-              <img src={`/icons/${icon}.svg`} alt="" width="20" height="20" />
-              <span>{label}</span>
-            </NavLink>
-          ))}
+          {items
+            .filter(([icon]) => !demoModules.includes(icon))
+            .map(([icon, path, label]) => (
+              <NavLink
+                key={path}
+                to={path}
+                end={path === '/app'}
+                onClick={() => setMenuOpen(false)}
+              >
+                <img src={`/icons/${icon}.svg`} alt="" width="20" height="20" />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          {items.some(([icon]) => demoModules.includes(icon)) && (
+            <>
+              <span className="nav-group" id="demo-modules">
+                Демо-модули
+              </span>
+              {items
+                .filter(([icon]) => demoModules.includes(icon))
+                .map(([icon, path, label]) => (
+                  <NavLink
+                    key={path}
+                    to={path}
+                    className="nav-demo"
+                    aria-describedby="demo-modules"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <img src={`/icons/${icon}.svg`} alt="" width="20" height="20" />
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
+            </>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <Link to="/app/profile" className="sidebar-profile" onClick={() => setMenuOpen(false)}>
@@ -117,25 +162,35 @@ export function AppShell() {
           >
             <Menu size={21} />
           </Button>
-          <span className="breadcrumb">
-            Рабочее пространство <span>/</span> {title}
-          </span>
+          <span className="breadcrumb">{title}</span>
           <div className="header-actions">
+            <CommandMenu />
+            {/* Where the data comes from lives here instead of a second bar under the header. */}
+            {server ? (
+              <span className="demo-pill">
+                <span className="demo-dot" />
+                <span className="demo-pill-text">Данные из Django</span>
+                <span className="demo-pill-short">Django</span>
+                <button type="button" onClick={() => void server.refresh()} disabled={busy}>
+                  <RefreshCcw size={13} aria-hidden="true" />
+                  <span className="demo-pill-action">Обновить данные</span>
+                </button>
+              </span>
+            ) : (
+              <span className="demo-pill">
+                <span className="demo-dot" />
+                <span className="demo-pill-text">Демоверсия · данные хранятся в этом браузере</span>
+                <span className="demo-pill-short">Демо</span>
+                <Link to="/login">Сменить профиль</Link>
+              </span>
+            )}
             <span className="header-date">
               {formatDate(new Date().toISOString(), {
                 day: 'numeric',
                 month: 'long',
-                year: 'numeric',
               })}
             </span>
-            <Link
-              to="/app/notifications"
-              className="notification-link"
-              aria-label={`Уведомления: ${unread} непрочитанных`}
-            >
-              <Bell size={18} />
-              {unread > 0 && <span>{unread}</span>}
-            </Link>
+            <NotificationsPopover />
             {server ? (
               <button
                 type="button"
@@ -158,43 +213,22 @@ export function AppShell() {
             )}
           </div>
         </header>
-        <div className="demo-strip">
-          <span className="demo-dot" />
-          <span>{server ? 'Данные из Django' : 'Локальная демоверсия'}</span>
-          <span className="demo-divider">·</span>
-          {server ? (
-            <button
-              type="button"
-              onClick={() => void server.refresh()}
-              disabled={busy}
-              className="text-link"
-            >
-              <RefreshCcw size={14} /> Обновить данные
-            </button>
-          ) : (
-            <>
-              <span className="demo-persistence">Изменения сохраняются в этом браузере</span>
-              <Link to="/login">Сменить профиль</Link>
-            </>
-          )}
-        </div>
         <main id="main-content" tabIndex={-1} className="app-content">
-          <Suspense
-            fallback={
-              <div className="skeleton-list" aria-label="Загрузка страницы" aria-busy="true">
-                <div />
-                <div />
-                <div />
-              </div>
-            }
-          >
-            <Outlet />
-          </Suspense>
+          {/* A new path lifts the page in for a moment; filters and tabs (query) do not. */}
+          <div key={location.pathname} className="page-enter">
+            <Suspense
+              fallback={
+                <div className="skeleton-list" aria-label="Загрузка страницы" aria-busy="true">
+                  <div />
+                  <div />
+                  <div />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </div>
         </main>
-        <footer className="app-footer">
-          <span>TaskControl · Рабочее пространство команды</span>
-          <Link to="/app/help/screens">Карта экранов</Link>
-        </footer>
       </div>
     </div>
   );
@@ -236,7 +270,7 @@ export function StorageRecovery() {
       </p>
       <Button
         onClick={() => {
-          const raw = localStorage.getItem('taskcontrol.workspace.v1') ?? '';
+          const raw = localStorage.getItem(STORAGE_KEY) ?? '';
           const url = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
           const a = document.createElement('a');
           a.href = url;

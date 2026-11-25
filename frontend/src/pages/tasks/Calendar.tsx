@@ -26,8 +26,7 @@ export function Calendar() {
   return (
     <Screen>
       <PageHeading
-        title="Календарь задач"
-        description="Сроки проектов и задач на одной шкале."
+        title="Календарь"
         action={
           user.role === 'manager' && (
             <ActionLink to="/app/tasks/new">

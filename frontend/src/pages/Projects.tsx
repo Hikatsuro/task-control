@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CalendarDays, FileText, Plus, Search, Users } from 'lucide-react';
+import { CalendarDays, FileText, Plus, Search, Users } from 'lucide-react';
 import { persist, useWorkspace } from '../state/workspace-context';
 import {
   availableProjects,
@@ -41,7 +41,7 @@ export function ProjectCard({ project }: { project: Project }) {
   return (
     <Link to={`/app/projects/${project.id}`} className="project-card">
       <div className="project-card-top">
-        <span>ПРОЕКТ</span>
+        <span>{data.clients.find((c) => c.id === project.clientId)?.name ?? 'Без заказчика'}</span>
         <span
           className={`badge ${project.status === 'archived' ? 'status-new' : project.status === 'completed' ? 'status-done' : overdue ? 'status-in_review' : 'status-in_progress'}`}
         >
@@ -55,7 +55,6 @@ export function ProjectCard({ project }: { project: Project }) {
         </span>
       </div>
       <h2>{project.name}</h2>
-      <p>Заказчик: {data.clients.find((c) => c.id === project.clientId)?.name ?? 'Не указан'}</p>
       <Progress value={progress} />
       <div className="project-card-bottom">
         <span>
@@ -69,7 +68,6 @@ export function ProjectCard({ project }: { project: Project }) {
             <Avatar key={id} name={data.users.find((u) => u.id === id)?.name ?? '?'} size="small" />
           ))}
         </div>
-        <ArrowRight size={18} />
       </div>
     </Link>
   );
@@ -95,7 +93,6 @@ export function Projects() {
     <Screen>
       <PageHeading
         title={tab === 'archived' ? 'Архив проектов' : 'Проекты'}
-        description="От первого поручения до принятого результата."
         action={
           user.role === 'manager' && (
             <ActionLink to="/app/projects/new">
@@ -108,17 +105,13 @@ export function Projects() {
       <div className="stats-row">
         <Stat
           value={projects.filter((p) => p.status === 'active').length}
-          label="Активных проектов"
+          label="активных проектов"
         />
         <Stat
           value={activeTasks.filter((t) => t.status === 'in_progress').length}
-          label="Задач в работе"
+          label="задач в работе"
         />
-        <Stat
-          value={activeTasks.filter((t) => isOverdue(t)).length}
-          label="Просроченных задач"
-          accent
-        />
+        <Stat value={activeTasks.filter((t) => isOverdue(t)).length} label="просрочено" accent />
       </div>
       <div className="filter-toolbar">
         <Tabs

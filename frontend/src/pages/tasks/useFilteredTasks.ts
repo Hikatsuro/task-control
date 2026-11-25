@@ -6,7 +6,10 @@ export function useFilteredTasks() {
   const { data, user } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const change = (key: string, value: string) => {
-    const next = new URLSearchParams(params);
+    // Start from the address bar, not from `params`: the router renders navigations as
+    // transitions, so two quick changes (pick a status, then type a search) could otherwise
+    // both start from the same old params and the second would drop the first.
+    const next = new URLSearchParams(window.location.search);
     if (value) next.set(key, value);
     else next.delete(key);
     setParams(next, { replace: true });

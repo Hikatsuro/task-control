@@ -92,6 +92,35 @@ class BillingTests(APITestCase):
         self.assertEqual(stranger.post("/api/billing/orders/capture/", {"order_id": "ORDER-1"}, format="json").status_code, 404)
         self.assertEqual(stranger.post("/api/billing/orders/cancel/", {"order_id": "ORDER-1"}, format="json").status_code, 404)
 
+    def test_cancelling_subscription_returns_basic_plan_and_allows_paying_again(self):
+        client = self.as_(self.manager)
+        self.start(client)
+        with patch("core.billing.paypal", return_value=captured()):
+            client.post("/api/billing/orders/capture/", {"order_id": "ORDER-1"}, format="json")
+        self.assertEqual(client.get("/api/billing/").json()["plan"], "pro")
+
+        cancelled = client.post("/api/billing/subscription/cancel/")
+        self.assertEqual(cancelled.json(), {"plan": "basic", "cancelled": True})
+        state = client.get("/api/billing/").json()
+        self.assertEqual(state["plan"], "basic")
+        self.assertEqual(state["last_order"]["status"], "completed")  # история оплат сохраняется
+
+        # Второй круг оплаты снова включает тариф.
+        with patch("core.billing.paypal", return_value=(201, {"id": "ORDER-2", "links": CREATED[1]["links"]})):
+            client.post("/api/billing/orders/")
+        with patch("core.billing.paypal", return_value=captured()):
+            again = client.post("/api/billing/orders/capture/", {"order_id": "ORDER-2"}, format="json")
+        self.assertEqual(again.json()["status"], "completed")
+        self.assertEqual(client.get("/api/billing/").json()["plan"], "pro")
+
+    def test_only_manager_cancels_subscription(self):
+        self.assertEqual(self.as_(self.employee).post("/api/billing/subscription/cancel/").status_code, 403)
+        # Без подписки аннулирование ничего не ломает.
+        self.assertEqual(
+            self.as_(self.other).post("/api/billing/subscription/cancel/").json(),
+            {"plan": "basic", "cancelled": False},
+        )
+
     def test_missing_credentials_return_clear_error(self):
         with self.settings(PAYPAL_CLIENT_ID="", PAYPAL_CLIENT_SECRET=""):
             response = self.as_(self.manager).post("/api/billing/orders/")

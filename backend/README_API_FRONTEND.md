@@ -13,7 +13,7 @@
 | Поле «название»           | `title`                                                     |
 | Поле «срок»               | `due_date` (строка `YYYY-MM-DD` или `null`)                 |
 | Поле «статус»             | `status` (одно из: `todo`, `in_progress`, `review`, `done`) |
-| Базовый адрес (локально)  | `http://localhost:8000`                                     |
+| Базовый адрес (локально)  | `http://127.0.0.1:8000` (Django), через сайт — `:8080/api/` |
 | Формат                    | JSON                                                        |
 | Авторизация               | сессия (cookie) после входа через `/api/auth/login/`        |
 
@@ -26,10 +26,13 @@ docker compose up -d db              # PostgreSQL (или без него: то�
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser     # получит роль «администратор»
-python manage.py runserver           # http://localhost:8000
+python manage.py runserver 127.0.0.1:8000   # клиент на 8080 проксирует /api сюда
 ```
 
-Пользователей и роли создаёт администратор в `http://localhost:8000/admin/`
+Порты: Django — 8000, сайт (Vite) — 8080, Ollama — 11434. В Docker сайт тоже на 8080,
+а gunicorn слушает 8000 внутри контейнера и наружу не открыт.
+
+Пользователей и роли создаёт администратор в `http://127.0.0.1:8000/admin/`
 (поле «Роль»: `admin` / `manager` / `employee`). Для проверки экранов создайте
 одного руководителя и одного сотрудника.
 
@@ -47,7 +50,7 @@ python manage.py runserver           # http://localhost:8000
 
 > **CORS:** в первой версии не настроен. Пока фронтенд и сервер на разных адресах
 > (разные порты тоже считаются), браузер заблокирует запросы. Варианты: прокси в dev-сервере
-> фронтенда (например, `/api` → `http://localhost:8000`) или попросить добавить `django-cors-headers`.
+> фронтенда (так сделано в `frontend/vite.config.ts`: `/api` → `http://127.0.0.1:8000`) или попросить добавить `django-cors-headers`.
 
 ---
 
@@ -246,8 +249,8 @@ async function setStatus(taskId, status) {
 
 ```bash
 curl -c cookies.txt -H "Content-Type: application/json" \
-  -d '{"username":"ivan","password":"..."}' http://localhost:8000/api/auth/login/
-curl -b cookies.txt "http://localhost:8000/api/tasks/?project_id=3"
+  -d '{"username":"ivan","password":"..."}' http://127.0.0.1:8000/api/auth/login/
+curl -b cookies.txt "http://127.0.0.1:8000/api/tasks/?project_id=3"
 ```
 
 ---
@@ -262,7 +265,7 @@ curl -b cookies.txt "http://localhost:8000/api/tasks/?project_id=3"
 
 ## 1. Согласованные параметры API
 - **Адрес для получения задач:** `GET /api/tasks/?project_id={id}`
-- **Базовый адрес (локально):** `http://localhost:8000`
+- **Базовый адрес (локально):** `http://127.0.0.1:8080` (сайт, по умолчанию в `api_client.py`) или `http://127.0.0.1:8000` (Django напрямую)
 - **Формат данных:** JSON
 - **Авторизация:** сессия (cookie) после входа через `POST /api/auth/login/`
 
@@ -279,7 +282,7 @@ curl -b cookies.txt "http://localhost:8000/api/tasks/?project_id=3"
 ```python
 from api_client import TaskManagerClient
 
-client = TaskManagerClient("http://localhost:8000")
+client = TaskManagerClient("http://127.0.0.1:8080")
 client.login("ivan", "password123")
 tasks = client.get_project_tasks(3)
 print(tasks)

@@ -1,0 +1,135 @@
+/* Motion: tab underline, page entry, growing charts, theme switch, bell. */
+
+/* «Уменьшить анимацию» in the settings: everything settles at once. */
+html[data-reduced-motion='true'] *,
+html[data-reduced-motion='true'] *::before,
+html[data-reduced-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ==========================================================================
+   Motion (frontend-clean). Movement that says what changed: 150–520 ms, transform
+   and opacity only. All of it stops with reduced motion, whether it comes from the
+   system or from the «Уменьшить анимацию» setting (data-reduced-motion on <html>).
+   ========================================================================== */
+
+/* Tabs: one underline slides to the active tab. */
+.has-indicator {
+  position: relative;
+}
+.tabs.has-indicator > .button,
+.view-tabs.has-indicator > a {
+  border-bottom-color: transparent;
+}
+.tab-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.15s ease;
+}
+
+/* Pages: a new section lifts in; the header and the menu stay put. */
+.page-enter {
+  animation: page-enter 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Reports: bars grow once when the chart first appears, one after another. */
+.status-chart .chart-bar,
+.rep-mini i {
+  transform-origin: left;
+  animation: rep-grow-x 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s backwards;
+}
+@keyframes rep-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes rep-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+.stat strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Theme: the colours cross-fade; from a theme button the new theme opens as a circle
+   (the circle itself is animated from theme.ts). */
+::view-transition-group(root) {
+  animation-duration: 0.32s;
+}
+html[data-theme-reveal='true']::view-transition-old(root),
+html[data-theme-reveal='true']::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Bell: a new notification pops the badge and rings the bell once. */
+.notification-link .badge-pop {
+  animation: badge-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.notification-link .bell-ring {
+  transform-origin: 50% 3px;
+  animation: bell-ring 0.7s ease-in-out;
+}
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes bell-ring {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15% {
+    transform: rotate(16deg);
+  }
+  35% {
+    transform: rotate(-12deg);
+  }
+  55% {
+    transform: rotate(7deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-indicator {
+    transition: none;
+  }
+  .page-enter,
+  .rep-stack,
+  .rep-bar,
+  .status-chart .chart-bar,
+  .rep-mini i,
+  .notification-link .badge-pop,
+  .notification-link .bell-ring {
+    animation: none;
+  }
+}

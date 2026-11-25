@@ -8,14 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  ArrowRight,
-  CalendarDays,
-  GripVertical,
-  MessageSquare,
-  Paperclip,
-  Plus,
-} from 'lucide-react';
+import { CalendarDays, GripVertical, MessageSquare, Paperclip, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ActionLink, Avatar, PageHeading, PriorityBadge, Screen } from '../../components/ui';
@@ -67,19 +60,23 @@ function BoardCard({ task }: { task: Task }) {
         </span>
         <Avatar name={data.users.find((u) => u.id === task.assigneeId)?.name ?? '?'} size="small" />
       </div>
-      <div className="board-card-meta">
-        <span>
-          <MessageSquare size={13} />
-          {task.comments.length}
-        </span>
-        <span>
-          <Paperclip size={13} />
-          {task.attachments.length}
-        </span>
-        <Link to={`/app/tasks/${task.id}`}>
-          Изменить статус <ArrowRight size={13} />
-        </Link>
-      </div>
+      {/* Counters only when there is something to count; the title already opens the card. */}
+      {(task.comments.length > 0 || task.attachments.length > 0) && (
+        <div className="board-card-meta">
+          {task.comments.length > 0 && (
+            <span aria-label={`Комментариев: ${task.comments.length}`}>
+              <MessageSquare size={13} />
+              {task.comments.length}
+            </span>
+          )}
+          {task.attachments.length > 0 && (
+            <span aria-label={`Вложений: ${task.attachments.length}`}>
+              <Paperclip size={13} />
+              {task.attachments.length}
+            </span>
+          )}
+        </div>
+      )}
     </article>
   );
 }
@@ -116,8 +113,7 @@ export function Board() {
   return (
     <Screen>
       <PageHeading
-        title="Задачи в работе"
-        description="Одна доска — весь путь от поручения до принятого результата."
+        title="Доска задач"
         action={
           user.role === 'manager' && (
             <ActionLink to="/app/tasks/new">

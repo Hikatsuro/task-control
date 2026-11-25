@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useWorkspace } from '../state/workspace-context';
 import { formatDate, isOverdue, nextStatuses, statusLabels, transition } from '../domain/model';
 import type { Status, Task } from '../domain/model';
@@ -94,7 +94,7 @@ export function TaskTable({ tasks, compact = false }: { tasks: Task[]; compact?:
                     className="icon-button"
                     aria-label={`Открыть задачу «${task.title}»`}
                   >
-                    <ArrowUpRight size={18} />
+                    <ChevronRight size={18} />
                   </Link>
                 </td>
               </tr>

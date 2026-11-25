@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, Check, ChevronRight, Inbox, X } from 'lucide-react';
+import { ArrowLeft, Check, Inbox, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMotionPreference } from '../state/useMotionPreference';
+import { useTabIndicator } from './useTabIndicator';
+import { CountUp } from './CountUp';
 import { priorityLabels, statusLabels } from '../domain/model';
 import type { Priority, Status } from '../domain/model';
 
@@ -192,19 +194,30 @@ export function Stat({
   label,
   accent = false,
   to,
+  countUp = false,
 }: {
   value: number | string;
   label: string;
   accent?: boolean;
   to?: string;
+  /** Count up from zero when the figure first appears (numbers and percentages). */
+  countUp?: boolean;
 }) {
+  // A quiet figure in a strip, not a hero tile: real numbers, no leading zeros, no arrows.
+  const percent = typeof value === 'string' ? /^(\d+)%$/.exec(value) : null;
+  const figure = !countUp ? (
+    value
+  ) : typeof value === 'number' ? (
+    <CountUp value={value} />
+  ) : percent ? (
+    <CountUp value={Number(percent[1])} suffix="%" />
+  ) : (
+    value
+  );
   const content = (
     <>
-      <strong className={accent ? 'accent' : ''}>
-        {typeof value === 'number' ? String(value).padStart(2, '0') : value}
-      </strong>
+      <strong className={accent && value ? 'accent' : ''}>{figure}</strong>
       <span>{label}</span>
-      {to && <ArrowUpRight size={18} />}
     </>
   );
   return to ? (
@@ -226,19 +239,22 @@ export function Tabs({
   onChange: (value: string) => void;
   label?: string;
 }) {
+  const ref = useTabIndicator<HTMLDivElement>(value);
   return (
-    <div className="tabs" role="group" aria-label={label}>
+    <div ref={ref} className="tabs has-indicator" role="group" aria-label={label}>
       {options.map((o) => (
         <Button
           key={o.value}
           variant="ghost"
           aria-pressed={value === o.value}
+          data-active={value === o.value}
           className={value === o.value ? 'tab-active' : ''}
           onClick={() => onChange(o.value)}
         >
           {o.label}
         </Button>
       ))}
+      <span className="tab-indicator" aria-hidden="true" />
     </div>
   );
 }
@@ -324,14 +340,6 @@ export function CheckLine({ children }: { children: ReactNode }) {
       <Check size={18} />
       {children}
     </div>
-  );
-}
-export function TextLink({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <Link to={to} className="text-link">
-      {children}
-      <ChevronRight size={15} />
-    </Link>
   );
 }
 export function NotFound({ forbidden = false }: { forbidden?: boolean }) {
